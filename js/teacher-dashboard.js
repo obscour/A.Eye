@@ -1,9 +1,3 @@
-// Supabase client init - uses config from config.js
-const supabase = window.supabase.createClient(
-  window.SUPABASE_CONFIG.url,
-  window.SUPABASE_CONFIG.key
-);
-
 let students = [];
 let currentStudent = null;
 let auditLogs = [];
@@ -14,16 +8,28 @@ let currentSort = { column: null, asc: true };
 // Function to handle logout
 async function logout() {
   try {
-    // Get teacher info before clearing
-    const teacherStr = localStorage.getItem('teacher');
-    const teacher = teacherStr ? JSON.parse(teacherStr) : null;
-    
-    // Log teacher logout
-    if (teacher && window.auditLog) {
-      await window.auditLog.logActivity('logout', `Teacher ${teacher.username} logged out`, teacher.id);
+    // Get teacher info before clearing (check both keys)
+    let teacher = localStorage.getItem('teacher');
+    if (!teacher) {
+      const user = localStorage.getItem('user');
+      if (user) {
+        const userData = JSON.parse(user);
+        if (userData.role === 'teacher') {
+          teacher = user;
+        }
+      }
     }
     
+    const teacherData = teacher ? JSON.parse(teacher) : null;
+    
+    // Log teacher logout
+    if (teacherData && window.auditLog) {
+      await window.auditLog.logActivity('logout', `Teacher ${teacherData.username} logged out`, teacherData.id);
+    }
+    
+    // Clear both keys
     localStorage.removeItem('teacher');
+    localStorage.removeItem('user');
     window.location.href = 'index.html';
   } catch (error) {
     alert('Logout failed: ' + (error.message || error));
@@ -34,12 +40,26 @@ window.logout = logout;
 
 // Function to check if user is a teacher
 function checkTeacherAuth() {
-  const teacher = localStorage.getItem('teacher');
-  if (!teacher) {
-    window.location.href = 'index.html';
-    return false;
+  // Check for 'teacher' key first (for compatibility)
+  let teacher = localStorage.getItem('teacher');
+  if (teacher) {
+    return JSON.parse(teacher);
   }
-  return JSON.parse(teacher);
+  
+  // Also check 'user' key with role='teacher'
+  const user = localStorage.getItem('user');
+  if (user) {
+    const userData = JSON.parse(user);
+    if (userData.role === 'teacher') {
+      // Store in 'teacher' key for consistency
+      localStorage.setItem('teacher', JSON.stringify(userData));
+      return userData;
+    }
+  }
+  
+  // No teacher found, redirect to login
+  window.location.href = 'index.html';
+  return false;
 }
 
 // Function to display teacher name
@@ -53,32 +73,15 @@ function displayTeacherName() {
 // Function to load all students
 async function loadStudents() {
   try {
-    console.log('Loading students...');
-    console.log('Supabase client:', supabase);
+    const response = await fetch('/api/get-students');
     
-    // Try the simplest possible query first
-    let { data, error } = await supabase
-      .from('users')
-      .select('*');
-
-    console.log('Simple query result:', { data, error });
-
-    if (error) {
-      console.error('Simple query failed:', error);
-      throw error;
+    if (!response.ok) {
+      throw new Error(`Failed to load students: ${response.status}`);
     }
 
-    // Filter for students manually (more reliable)
-    const studentUsers = data ? data.filter(user => {
-      // Include users with role='student' or no role (default to student)
-      return user.role === 'student' || !user.role || user.role === null;
-    }) : [];
-
-    console.log('All users:', data);
-    console.log('Filtered students:', studentUsers);
-
-    students = studentUsers;
-    console.log('Students loaded:', students);
+    const result = await response.json();
+    students = result.students || [];
+    
     populateStudentSelect();
   } catch (error) {
     console.error('Error loading students:', error);
@@ -145,31 +148,33 @@ function hideStudentSections() {
 // Function to load student statistics
 async function loadStudentStats(studentId) {
   try {
-    const { data: userData, error } = await supabase
-      .from('users')
-      .select('stats')
-      .eq('uuid', studentId)
-      .single();
+    const response = await fetch('/api/get-user-stats', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: studentId })
+    });
 
-    if (error) throw error;
+    if (!response.ok) {
+      throw new Error(`Failed to load stats: ${response.status}`);
+    }
+
+    const result = await response.json();
+    const userData = result.data;
 
     let statsArray = [];
     if (userData && userData.stats) {
-      try {
-        const statsJson = typeof userData.stats === 'string' ? JSON.parse(userData.stats) : userData.stats;
-        
-        statsArray = Object.entries(statsJson).map(([char, data]) => ({
-          alphanumeric_char: char,
-          attempts: data.attempts || 0,
-          mastery_score: data.mastery || 0,
-          correct_count: data.correct || 0,
-          avg_response_time: 0, // Not available in current JSON structure
-          streak: data.streak || 0
-        }));
-      } catch (parseError) {
-        console.error('Error parsing stats JSON:', parseError);
-        statsArray = [];
-      }
+      const statsJson = typeof userData.stats === 'string' 
+        ? JSON.parse(userData.stats) 
+        : userData.stats;
+      
+      statsArray = Object.entries(statsJson).map(([char, data]) => ({
+        alphanumeric_char: char,
+        attempts: data.attempts || 0,
+        mastery_score: data.mastery || 0,
+        correct_count: data.correct || 0,
+        avg_response_time: 0,
+        streak: data.streak || 0
+      }));
     }
 
     renderStudentStatsTable(statsArray);

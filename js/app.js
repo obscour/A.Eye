@@ -1,9 +1,3 @@
-// Supabase client init - uses config from config.js
-const supabase = window.supabase.createClient(
-  window.SUPABASE_CONFIG.url,
-  window.SUPABASE_CONFIG.key
-);
-
 // Function to generate QR code (larger)
 async function generateQRCode({ onlyMobile = false } = {}) {
   try {
@@ -256,43 +250,44 @@ function updateSortIndicators() {
   });
 }
 
-// Function to fetch and display user stats
+// Fetch and display user stats through Vercel API
 async function displayUserStats() {
   try {
-    // Get user from localStorage (custom auth)
     const userStr = localStorage.getItem('user');
     if (!userStr) throw new Error('No user logged in');
-    
+
     const user = JSON.parse(userStr);
 
-    // Fetch the stats JSON data from the users table
-    const { data: userData, error: userError } = await supabase
-      .from('users')
-      .select('stats')
-      .eq('uuid', user.id)
-      .single();
+    // Call Vercel backend instead of Supabase directly
+    const response = await fetch('/api/get-user-stats', {
+      method: 'POST',
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: user.id })
+    });
 
-    if (userError) throw userError;
+    if (!response.ok) {
+      throw new Error(`Failed to load stats: ${response.status}`);
+    }
 
-    // Parse the JSON stats and transform to table format
+    const result = await response.json();
+    const userData = result.data;
+
     let statsArray = [];
+
     if (userData && userData.stats) {
-      try {
-        const statsJson = typeof userData.stats === 'string' ? JSON.parse(userData.stats) : userData.stats;
-        
-        // Transform the JSON object into an array for table display
-        statsArray = Object.entries(statsJson).map(([char, data]) => ({
-          alphanumeric_char: char,
-          attempts: data.attempts || 0,
-          mastery_score: data.mastery || 0,
-          correct_count: data.correct || 0,
-          avg_response_time: 0, // Not available in current JSON structure
-          streak: data.streak || 0
-        }));
-      } catch (parseError) {
-        console.error('Error parsing stats JSON:', parseError);
-        statsArray = [];
-      }
+      const statsJson =
+        typeof userData.stats === 'string'
+          ? JSON.parse(userData.stats)
+          : userData.stats;
+
+      statsArray = Object.entries(statsJson).map(([char, data]) => ({
+        alphanumeric_char: char,
+        attempts: data.attempts || 0,
+        mastery_score: data.mastery || 0,
+        correct_count: data.correct || 0,
+        avg_response_time: 0,
+        streak: data.streak || 0
+      }));
     }
 
     statsData = statsArray;
@@ -300,8 +295,8 @@ async function displayUserStats() {
     updateSortIndicators();
   } catch (error) {
     const tbody = document.getElementById('userStatsBody');
-    tbody.innerHTML = `<tr><td colspan="5" class="text-danger text-center">Error: ${error?.message || error}</td></tr>`;
-    console.error('Error fetching user stats:', error?.message || error);
+    tbody.innerHTML = `<tr><td colspan="6" class="text-danger text-center">Error: ${error.message}</td></tr>`;
+    console.error('Error fetching stats:', error);
   }
 }
 

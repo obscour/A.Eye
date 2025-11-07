@@ -1,143 +1,81 @@
-// Audit Log System
-// This file handles logging of user activities for teacher monitoring
+// FRONTEND Audit Log System
+// Sends logs to Vercel API instead of using Supabase directly
 
-// Supabase client for audit logs
-const supabaseAudit = window.supabase.createClient(
-  window.SUPABASE_CONFIG.url,
-  window.SUPABASE_CONFIG.key
-);
-
-// Function to get user's IP address (simplified)
 async function getUserIP() {
   try {
-    const response = await fetch('https://api.ipify.org?format=json');
-    const data = await response.json();
-    return data.ip;
-  } catch (error) {
-    console.error('Error getting IP:', error);
+    const res = await fetch('https://api.ipify.org?format=json');
+    const data = await res.json();
+    return data.ip || 'Unknown';
+  } catch {
     return 'Unknown';
   }
 }
 
-// Function to log user activity
 async function logActivity(activity, details = '', userId = null) {
   try {
-    // Get current user if not provided
     if (!userId) {
-      const userStr = localStorage.getItem('user');
-      const teacherStr = localStorage.getItem('teacher');
-      
-      if (userStr) {
-        const user = JSON.parse(userStr);
-        userId = user.id;
-      } else if (teacherStr) {
-        const teacher = JSON.parse(teacherStr);
-        userId = teacher.id;
-      } else {
-        console.warn('No user found for audit log');
-        return;
-      }
+      const user = JSON.parse(localStorage.getItem('user') || 'null');
+      const teacher = JSON.parse(localStorage.getItem('teacher') || 'null');
+
+      if (user) userId = user.id;
+      else if (teacher) userId = teacher.id;
+      else return;
     }
 
     const ipAddress = await getUserIP();
-    const timestamp = new Date().toISOString();
 
-    // Store in Supabase audit_logs table
-    const { data, error } = await supabaseAudit
-      .from('audit_logs')
-      .insert([{
-        id: crypto.randomUUID(),
-        user_id: userId,
-        activity: activity,
-        details: details,
-        ip_address: ipAddress,
-        timestamp: timestamp
-      }])
-      .select();
+    await fetch('/api/audit-log', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId,
+        activity,
+        details,
+        ipAddress
+      })
+    });
 
-    if (error) {
-      console.error('Error saving audit log to database:', error);
-      // Fallback to localStorage if database insert fails
-      const auditLog = {
-        id: crypto.randomUUID(),
-        user_id: userId,
-        activity: activity,
-        details: details,
-        ip_address: ipAddress,
-        timestamp: timestamp
-      };
-      const existingLogs = JSON.parse(localStorage.getItem('audit_logs') || '[]');
-      existingLogs.push(auditLog);
-      if (existingLogs.length > 1000) {
-        existingLogs.splice(0, existingLogs.length - 1000);
-      }
-      localStorage.setItem('audit_logs', JSON.stringify(existingLogs));
-    } else {
-      console.log('Activity logged to database:', data);
-    }
-  } catch (error) {
-    console.error('Error logging activity:', error);
+  } catch (err) {
+    console.error('Audit log error:', err);
   }
 }
 
-// Function to get audit logs for a specific user
 async function getAuditLogs(userId) {
   try {
-    // Fetch from Supabase database
-    const { data, error } = await supabaseAudit
-      .from('audit_logs')
-      .select('*')
-      .eq('user_id', userId)
-      .order('timestamp', { ascending: false });
+    const response = await fetch('/api/get-audit-logs', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId })
+    });
 
-    if (error) {
-      console.error('Error fetching audit logs from database:', error);
-      // Fallback to localStorage
-      const allLogs = JSON.parse(localStorage.getItem('audit_logs') || '[]');
-      return allLogs.filter(log => log.user_id === userId);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch audit logs: ${response.status}`);
     }
 
-    // Successfully fetched from database - clear old localStorage logs
-    // This removes test/sample logs that were stored locally
-    localStorage.removeItem('audit_logs');
-
-    return data || [];
-  } catch (error) {
-    console.error('Error getting audit logs:', error);
-    // Fallback to localStorage
-    const allLogs = JSON.parse(localStorage.getItem('audit_logs') || '[]');
-    return allLogs.filter(log => log.user_id === userId);
+    const result = await response.json();
+    return result.logs || [];
+  } catch (err) {
+    console.error('Error getting audit logs:', err);
+    return [];
   }
 }
 
-// Function to get all audit logs (for admin/teacher view)
 async function getAllAuditLogs() {
   try {
-    // Fetch from Supabase database
-    const { data, error } = await supabaseAudit
-      .from('audit_logs')
-      .select('*')
-      .order('timestamp', { ascending: false });
-
-    if (error) {
-      console.error('Error fetching all audit logs from database:', error);
-      // Fallback to localStorage
-      return JSON.parse(localStorage.getItem('audit_logs') || '[]');
+    const response = await fetch('/api/get-all-audit-logs');
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch audit logs: ${response.status}`);
     }
 
-    // Successfully fetched from database - clear old localStorage logs
-    // This removes test/sample logs that were stored locally
-    localStorage.removeItem('audit_logs');
-
-    return data || [];
-  } catch (error) {
-    console.error('Error getting all audit logs:', error);
-    // Fallback to localStorage
-    return JSON.parse(localStorage.getItem('audit_logs') || '[]');
+    const result = await response.json();
+    return result.logs || [];
+  } catch (err) {
+    console.error('Error getting all audit logs:', err);
+    return [];
   }
 }
 
-// Export functions for use in other files
 window.auditLog = {
   logActivity,
   getAuditLogs,
