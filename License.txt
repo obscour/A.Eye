@@ -1,0 +1,9 @@
+All rights reserved.
+
+This repository is part of a university project and may not be redistributed, used, or modified for personal, academic, or commercial purposes without explicit permission from the author.
+
+No license is provided, and the contents of this repository cannot be copied, distributed, or otherwise used without express consent.
+
+By using this repository, you agree not to copy, distribute, or use any of the code, documentation, or other materials in this repository for any purpose other than personal use in accordance with the academic requirements of the project.
+
+Copyright 2025 Dags.
