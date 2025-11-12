@@ -1,5 +1,5 @@
-let students = [];
-let currentStudent = null;
+let users = [];
+let currentUser = null;
 let auditLogs = [];
 let filteredAuditLogs = [];
 let displayedLogCount = 25; // Maximum logs to show initially
@@ -8,27 +8,27 @@ let currentSort = { column: null, asc: true };
 // Function to handle logout
 async function logout() {
   try {
-    // Get teacher info before clearing (check both keys)
-    let teacher = localStorage.getItem('teacher');
-    if (!teacher) {
+    // Get admin info before clearing (check both keys)
+    let admin = localStorage.getItem('admin');
+    if (!admin) {
       const user = localStorage.getItem('user');
       if (user) {
         const userData = JSON.parse(user);
-        if (userData.role === 'teacher') {
-          teacher = user;
+        if (userData.role === 'admin') {
+          admin = user;
         }
       }
     }
     
-    const teacherData = teacher ? JSON.parse(teacher) : null;
+    const adminData = admin ? JSON.parse(admin) : null;
     
-    // Log teacher logout
-    if (teacherData && window.auditLog) {
-      await window.auditLog.logActivity('logout', `Teacher ${teacherData.username} logged out`, teacherData.id);
+    // Log admin logout
+    if (adminData && window.auditLog) {
+      await window.auditLog.logActivity('logout', `Admin ${adminData.username} logged out`, adminData.id);
     }
     
     // Clear both keys
-    localStorage.removeItem('teacher');
+    localStorage.removeItem('admin');
     localStorage.removeItem('user');
     window.location.href = 'index.html';
   } catch (error) {
@@ -38,126 +38,118 @@ async function logout() {
 }
 window.logout = logout;
 
-// Function to check if user is a teacher
-function checkTeacherAuth() {
-  // Check for 'teacher' key first (for compatibility)
-  let teacher = localStorage.getItem('teacher');
-  if (teacher) {
-    return JSON.parse(teacher);
+// Function to check if user is an admin
+function checkAdminAuth() {
+  // Check for 'admin' key first (for compatibility)
+  let admin = localStorage.getItem('admin');
+  if (admin) {
+    return JSON.parse(admin);
   }
   
-  // Also check 'user' key with role='teacher'
+  // Also check 'user' key with role='admin'
   const user = localStorage.getItem('user');
   if (user) {
     const userData = JSON.parse(user);
-    if (userData.role === 'teacher') {
-      // Store in 'teacher' key for consistency
-      localStorage.setItem('teacher', JSON.stringify(userData));
+    if (userData.role === 'admin') {
+      // Store in 'admin' key for consistency
+      localStorage.setItem('admin', JSON.stringify(userData));
       return userData;
     }
   }
   
-  // No teacher found, redirect to login
+  // No admin found, redirect to login
   window.location.href = 'index.html';
   return false;
 }
 
-// Helper function to format user name as LASTNAME, FIRSTNAME (USERNAME)
+// Helper function to format user name as USERNAME
 function formatUserName(user) {
-  if (user.last_name && user.first_name) {
-    return `${user.last_name.toUpperCase()}, ${user.first_name} (${user.username})`;
-  } else if (user.first_name) {
-    return `${user.first_name} (${user.username})`;
-  } else if (user.last_name) {
-    return `${user.last_name.toUpperCase()} (${user.username})`;
-  } else {
-    return user.username;
+  return user.username;
+}
+
+// Function to display admin name
+function displayAdminName() {
+  const admin = checkAdminAuth();
+  if (admin) {
+    const formattedName = formatUserName(admin);
+    document.getElementById('adminName').textContent = `Welcome, ${formattedName}`;
   }
 }
 
-// Function to display teacher name
-function displayTeacherName() {
-  const teacher = checkTeacherAuth();
-  if (teacher) {
-    const formattedName = formatUserName(teacher);
-    document.getElementById('teacherName').textContent = `Welcome, ${formattedName}`;
-  }
-}
-
-// Function to load all students
-async function loadStudents() {
+// Function to load all users
+async function loadUsers() {
   try {
     const response = await fetch('/api/get-students');
     
     if (!response.ok) {
-      throw new Error(`Failed to load students: ${response.status}`);
+      throw new Error(`Failed to load users: ${response.status}`);
     }
 
     const result = await response.json();
-    students = result.students || [];
+    users = result.users || [];
     
-    populateStudentSelect();
+    populateUserSelect();
   } catch (error) {
-    console.error('Error loading students:', error);
-    alert('Failed to load students: ' + error.message);
+    console.error('Error loading users:', error);
+    alert('Failed to load users: ' + error.message);
     
     // Show a fallback message in the dropdown
-    const select = document.getElementById('studentSelect');
+    const select = document.getElementById('userSelect');
     if (select) {
-      select.innerHTML = '<option value="">Error loading students</option>';
+      select.innerHTML = '<option value="">Error loading users</option>';
     }
   }
 }
 
-// Function to populate student select dropdown
-function populateStudentSelect() {
-  const select = document.getElementById('studentSelect');
-  select.innerHTML = '<option value="">Choose a student...</option>';
+// Function to populate user select dropdown
+function populateUserSelect() {
+  const select = document.getElementById('userSelect');
+  select.innerHTML = '<option value="">Choose a user...</option>';
   
-  console.log('Populating student select with:', students);
+  console.log('Populating user select with:', users);
   
-  students.forEach(student => {
+  users.forEach(user => {
     const option = document.createElement('option');
-    option.value = student.uuid;
-    // Format name as LASTNAME, FIRSTNAME (USERNAME) - Email
-    const formattedName = formatUserName(student);
-    const email = student.email || '';
+    option.value = user.uuid;
+    // Format name as USERNAME - Email
+    const formattedName = formatUserName(user);
+    const email = user.email || '';
     option.textContent = `${formattedName} - ${email}`;
     // Include creation date in tooltip
-    option.title = student.created_at 
-      ? `Account created: ${new Date(student.created_at).toLocaleString()}` 
+    option.title = user.created_at 
+      ? `Account created: ${new Date(user.created_at).toLocaleString()}` 
       : `Email: ${email}`;
     select.appendChild(option);
-    console.log('Added student option:', formattedName);
+    console.log('Added user option:', formattedName);
   });
   
   console.log('Total options in select:', select.options.length);
 }
 
-// Function to refresh student list
-async function refreshStudentList() {
-  await loadStudents();
+// Function to refresh user list
+async function refreshUserList() {
+  await loadUsers();
 }
 
-// Function to load student data when selected
-async function loadStudentData() {
-  const studentId = document.getElementById('studentSelect').value;
-  if (!studentId) {
-    hideStudentSections();
+// Function to load user data when selected
+async function loadUserData() {
+  const userId = document.getElementById('userSelect').value;
+  if (!userId) {
+    hideUserSections();
     return;
   }
 
-  currentStudent = students.find(s => s.uuid === studentId);
-  if (!currentStudent) return;
+  currentUser = users.find(u => u.uuid === userId);
+  if (!currentUser) return;
 
-  // Format name as LASTNAME, FIRSTNAME (USERNAME)
-  const formattedName = formatUserName(currentStudent);
-  document.getElementById('selectedStudentName').textContent = formattedName;
+  // Format name as USERNAME
+  const formattedName = formatUserName(currentUser);
+  document.getElementById('selectedUserName').textContent = formattedName;
   
   // Display account creation date if available
-  const createdBadge = document.getElementById('selectedStudentCreated');
-  if (currentStudent.created_at) {
-    const createdDate = new Date(currentStudent.created_at);
+  const createdBadge = document.getElementById('selectedUserCreated');
+  if (currentUser.created_at) {
+    const createdDate = new Date(currentUser.created_at);
     createdBadge.textContent = `Joined: ${createdDate.toLocaleDateString()}`;
     createdBadge.title = `Account created: ${createdDate.toLocaleString()}`;
     createdBadge.style.display = 'inline-block';
@@ -169,24 +161,24 @@ async function loadStudentData() {
   document.getElementById('auditLogSection').style.display = 'block';
 
   await Promise.all([
-    loadStudentStats(studentId),
-    loadAuditLogs(studentId)
+    loadUserStats(userId),
+    loadAuditLogs(userId)
   ]);
 }
 
-// Function to hide student sections
-function hideStudentSections() {
+// Function to hide user sections
+function hideUserSections() {
   document.getElementById('studentProgressSection').style.display = 'none';
   document.getElementById('auditLogSection').style.display = 'none';
 }
 
-// Function to load student statistics
-async function loadStudentStats(studentId) {
+// Function to load user statistics
+async function loadUserStats(userId) {
   try {
     const response = await fetch('/api/get-user-stats', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: studentId })
+      body: JSON.stringify({ userId })
     });
 
     if (!response.ok) {
@@ -212,16 +204,16 @@ async function loadStudentStats(studentId) {
       }));
     }
 
-    renderStudentStatsTable(statsArray);
+    renderUserStatsTable(statsArray);
   } catch (error) {
-    console.error('Error loading student stats:', error);
+    console.error('Error loading user stats:', error);
     document.getElementById('studentStatsBody').innerHTML = 
       `<tr><td colspan="6" class="text-danger text-center">Error loading stats: ${error.message}</td></tr>`;
   }
 }
 
-// Function to render student stats table
-function renderStudentStatsTable(stats) {
+// Function to render user stats table
+function renderUserStatsTable(stats) {
   const tbody = document.getElementById('studentStatsBody');
   tbody.innerHTML = '';
   
@@ -242,13 +234,13 @@ function renderStudentStatsTable(stats) {
 }
 
 // Function to load audit logs
-async function loadAuditLogs(studentId) {
+async function loadAuditLogs(userId) {
   try {
-    console.log('Loading audit logs for student:', studentId);
+    console.log('Loading audit logs for user:', userId);
     
     // Get audit logs from the audit log system
     if (window.auditLog) {
-      auditLogs = await window.auditLog.getAuditLogs(studentId);
+      auditLogs = await window.auditLog.getAuditLogs(userId);
       console.log('Audit logs received:', auditLogs);
     } else {
       console.warn('Audit log system not available');
@@ -256,9 +248,9 @@ async function loadAuditLogs(studentId) {
     }
     
     if (!auditLogs || auditLogs.length === 0) {
-      console.log('No audit logs found for this student');
+      console.log('No audit logs found for this user');
       document.getElementById('auditLogBody').innerHTML = 
-        '<tr><td colspan="3" class="text-center">No audit logs found for this student.</td></tr>';
+        '<tr><td colspan="3" class="text-center">No audit logs found for this user.</td></tr>';
       document.getElementById('showMoreContainer').style.display = 'none';
       return;
     }
@@ -351,12 +343,12 @@ function showMoreLogs() {
 
 // Function to refresh audit log
 async function refreshAuditLog() {
-  if (currentStudent) {
-    await loadAuditLogs(currentStudent.uuid);
+  if (currentUser) {
+    await loadAuditLogs(currentUser.uuid);
   }
 }
 
-// Function to sort and render student stats
+// Function to sort and render user stats
 function sortAndRender(column) {
   if (currentSort.column === column) {
     currentSort.asc = !currentSort.asc;
@@ -391,7 +383,7 @@ function sortAndRender(column) {
       : String(b[column]).localeCompare(String(a[column]));
   });
   
-  renderStudentStatsTable(data);
+  renderUserStatsTable(data);
   updateSortIndicators();
 }
 
@@ -407,14 +399,14 @@ function updateSortIndicators() {
 
 // Function to show edit credentials modal
 function showEditCredentialsModal() {
-  if (!currentStudent) {
-    alert('Please select a student first');
+  if (!currentUser) {
+    alert('Please select a user first');
     return;
   }
 
-  // Populate modal with current student data
-  document.getElementById('editUsername').value = currentStudent.username || '';
-  document.getElementById('editEmail').value = currentStudent.email || '';
+  // Populate modal with current user data
+  document.getElementById('editUsername').value = currentUser.username || '';
+  document.getElementById('editEmail').value = currentUser.email || '';
   document.getElementById('editPassword').value = '';
 
   // Show modal
@@ -424,8 +416,8 @@ function showEditCredentialsModal() {
 
 // Function to save credentials
 async function saveCredentials() {
-  if (!currentStudent) {
-    alert('No student selected');
+  if (!currentUser) {
+    alert('No user selected');
     return;
   }
 
@@ -449,7 +441,7 @@ async function saveCredentials() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        userId: currentStudent.uuid,
+        userId: currentUser.uuid,
         ...updateData
       })
     });
@@ -460,19 +452,19 @@ async function saveCredentials() {
       throw new Error(result.error || 'Failed to update credentials');
     }
 
-    // Update current student object
-    if (updateData.username) currentStudent.username = updateData.username;
-    if (updateData.email) currentStudent.email = updateData.email;
+    // Update current user object
+    if (updateData.username) currentUser.username = updateData.username;
+    if (updateData.email) currentUser.email = updateData.email;
 
-    // Update student list
-    const studentIndex = students.findIndex(s => s.uuid === currentStudent.uuid);
-    if (studentIndex !== -1) {
-      students[studentIndex] = { ...students[studentIndex], ...updateData };
-      populateStudentSelect();
+    // Update user list
+    const userIndex = users.findIndex(u => u.uuid === currentUser.uuid);
+    if (userIndex !== -1) {
+      users[userIndex] = { ...users[userIndex], ...updateData };
+      populateUserSelect();
     }
 
     // Update displayed name
-    document.getElementById('selectedStudentName').textContent = currentStudent.username;
+    document.getElementById('selectedUserName').textContent = currentUser.username;
 
     // Close modal
     const modal = bootstrap.Modal.getInstance(document.getElementById('editCredentialsModal'));
@@ -483,11 +475,11 @@ async function saveCredentials() {
 
     // Log the activity
     if (window.auditLog) {
-      const teacher = checkTeacherAuth();
+      const admin = checkAdminAuth();
       await window.auditLog.logActivity(
         'credentials_updated',
-        `Teacher ${teacher.username} updated credentials for student ${currentStudent.username}`,
-        teacher.id
+        `Admin ${admin.username} updated credentials for user ${currentUser.username}`,
+        admin.id
       );
     }
   } catch (error) {
@@ -501,11 +493,11 @@ window.saveCredentials = saveCredentials;
 
 // Initialize page
 document.addEventListener('DOMContentLoaded', function() {
-  const teacher = checkTeacherAuth();
-  if (!teacher) return;
+  const admin = checkAdminAuth();
+  if (!admin) return;
 
-  displayTeacherName();
-  loadStudents();
+  displayAdminName();
+  loadUsers();
 
   // Attach sorting event listeners
   document.querySelectorAll('#studentStatsTable th.sortable').forEach(th => {
@@ -523,3 +515,4 @@ style.innerHTML = `
   th.sortable.sorted-desc:after { content: ' \\25BC'; color: #007bff; }
 `;
 document.head.appendChild(style);
+

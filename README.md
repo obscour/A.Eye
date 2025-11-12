@@ -4,7 +4,7 @@ This is the companion website for the **A.Eye** device — an assistive tool tha
 
 ## Features
 
-- Dashboard for parents/teachers to track progress.
+- Dashboard for learners to track progress.
 - Tracks performance per Braille letter.
 - QR for easier log in.
 

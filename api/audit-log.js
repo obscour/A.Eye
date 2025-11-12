@@ -8,7 +8,7 @@ export default async function handler(req, res) {
 
   try {
     const body = req.body || {}
-    const { userId, activity, details, ipAddress } = body
+    const { userId, activity, details } = body
 
     if (!userId || !activity) {
       return res.status(400).json({ error: 'Missing required fields: userId and activity' })
@@ -23,7 +23,6 @@ export default async function handler(req, res) {
         user_id: userId,
         activity,
         details: details || '',
-        ip_address: ipAddress || 'Unknown',
         timestamp
       }])
       .select()

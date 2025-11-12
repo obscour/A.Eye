@@ -1,3 +1,16 @@
+// Helper function to format user name as LASTNAME, FIRSTNAME (USERNAME)
+function formatUserName(user) {
+  if (user.last_name && user.first_name) {
+    return `${user.last_name.toUpperCase()}, ${user.first_name} (${user.username})`;
+  } else if (user.first_name) {
+    return `${user.first_name} (${user.username})`;
+  } else if (user.last_name) {
+    return `${user.last_name.toUpperCase()} (${user.username})`;
+  } else {
+    return user.username;
+  }
+}
+
 // Function to generate QR code (larger)
 async function generateQRCode({ onlyMobile = false } = {}) {
   try {
@@ -140,7 +153,9 @@ async function displayCurrentUser() {
     if (!userStr) throw new Error('No user logged in');
     
     const user = JSON.parse(userStr);
-    const welcomeText = `Welcome! <strong>${user.username}</strong>`;
+    // Format name as LASTNAME, FIRSTNAME (USERNAME)
+    const formattedName = formatUserName(user);
+    const welcomeText = `Welcome! <strong>${formattedName}</strong>`;
 
     // Desktop sidebar
     const currentUserDiv = document.getElementById('currentUser');

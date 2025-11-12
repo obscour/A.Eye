@@ -8,22 +8,22 @@ export default async function handler(req, res) {
   try {
     const { data, error } = await supabase
       .from('users')
-      .select('uuid, email, username, role')
-      .or('role.eq.student,role.is.null')
+      .select('uuid, email, username, role, created_at')
+      .order('created_at', { ascending: false })
 
     if (error) {
-      console.error('Error fetching students:', error)
+      console.error('Error fetching users:', error)
       return res.status(500).json({ error: error.message })
     }
 
-    // Filter for students (role='student' or no role)
-    const students = (data || []).filter(user => 
-      user.role === 'student' || !user.role || user.role === null
+    // Return all users (excluding admins unless specifically requested)
+    const users = (data || []).filter(user => 
+      user.role !== 'admin' || !user.role
     )
 
-    return res.status(200).json({ students })
+    return res.status(200).json({ users })
   } catch (err) {
-    console.error('Get students error:', err)
+    console.error('Get users error:', err)
     return res.status(500).json({ error: err.message || 'Internal server error' })
   }
 }

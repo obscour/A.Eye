@@ -27,7 +27,7 @@ export default async function handler(req, res) {
     
     const { data, error } = await supabase
       .from('users')
-      .select('uuid, email, username, password, role')
+      .select('uuid, email, username, password, role, email_verified')
       .eq(column, identifier)
       .single()
 
