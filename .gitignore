@@ -2,3 +2,5 @@
 .env.local
 node_modules
 package-lock.json
+admin-dashboard.html
+js/admin-dashboard.js

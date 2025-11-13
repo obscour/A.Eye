@@ -64,23 +64,6 @@ function showMessage(type, text) {
   msg.style.display = "block";
 }
 
-// Account type selection
-function selectAccountType(type) {
-  const studentCard = document.getElementById("studentCard");
-  const teacherCard = document.getElementById("teacherCard");
-  const studentType = document.getElementById("studentType");
-  const teacherType = document.getElementById("teacherType");
-
-  if (type === "student") {
-    studentCard.classList.add("selected");
-    teacherCard.classList.remove("selected");
-    studentType.checked = true;
-  } else {
-    teacherCard.classList.add("selected");
-    studentCard.classList.remove("selected");
-    teacherType.checked = true;
-  }
-}
 
 // ===============================
 // LOGIN HANDLER
@@ -135,8 +118,6 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
     setTimeout(() => {
       if (result.user.role === "admin") {
         window.location.href = "admin-dashboard.html";
-      } else if (result.user.role === "teacher") {
-        window.location.href = "teacher-dashboard.html";
       } else {
         window.location.href = "dashboard.html";
       }
@@ -168,13 +149,10 @@ document.getElementById("registerForm").addEventListener("submit", async (e) => 
   e.preventDefault();
   hideMessages();
 
-  const firstName = document.getElementById("firstName")?.value.trim() || "";
-  const lastName = document.getElementById("lastName")?.value.trim() || "";
   const username = document.getElementById("registerUsername").value.trim();
   const email = document.getElementById("registerEmail").value.trim();
   const password = document.getElementById("registerPassword").value.trim();
   const confirmPassword = document.getElementById("confirmPassword").value.trim();
-  const accountType = document.querySelector('input[name="accountType"]:checked')?.value || "student";
   const agreeToTerms = document.getElementById("agreeToTerms").checked;
 
   if (!username || !email || !password || !confirmPassword) {
@@ -198,11 +176,6 @@ document.getElementById("registerForm").addEventListener("submit", async (e) => 
       email,
       password,
     };
-
-    // Add optional fields if provided
-    if (firstName) registerData.firstName = firstName;
-    if (lastName) registerData.lastName = lastName;
-    if (accountType) registerData.role = accountType;
 
     const res = await fetch("/api/register", {
       method: "POST",
@@ -389,8 +362,6 @@ document.addEventListener("DOMContentLoaded", () => {
         setTimeout(() => {
           if (user.role === "admin") {
             window.location.href = "admin-dashboard.html";
-          } else if (user.role === "teacher") {
-            window.location.href = "teacher-dashboard.html";
           } else {
             window.location.href = "dashboard.html";
           }

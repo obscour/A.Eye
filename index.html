@@ -56,14 +56,6 @@
     <!-- Registration Form -->
     <form id="registerForm" style="display: none;">
       <div class="form-floating mb-3">
-        <input type="text" class="form-control" id="firstName" placeholder="First Name" />
-        <label for="firstName">First Name</label>
-      </div>
-      <div class="form-floating mb-3">
-        <input type="text" class="form-control" id="lastName" placeholder="Last Name" />
-        <label for="lastName">Last Name</label>
-      </div>
-      <div class="form-floating mb-3">
         <input type="text" class="form-control" id="registerUsername" placeholder="Username" required />
         <label for="registerUsername">Username</label>
       </div>
@@ -78,25 +70,6 @@
       <div class="form-floating mb-3">
         <input type="password" class="form-control" id="confirmPassword" placeholder="Confirm Password" required />
         <label for="confirmPassword">Confirm Password</label>
-      </div>
-      <div class="mb-4">
-        <label class="form-label fw-bold text-center d-block">Account Type</label>
-        <div class="account-type-container">
-          <div class="account-type-option" onclick="selectAccountType('student')">
-            <input type="radio" name="accountType" id="studentType" value="student" checked style="display: none;" />
-            <div class="account-type-card selected" id="studentCard">
-              <div class="account-type-icon">🎓</div>
-              <div class="account-type-label">Student</div>
-            </div>
-          </div>
-          <div class="account-type-option" onclick="selectAccountType('teacher')">
-            <input type="radio" name="accountType" id="teacherType" value="teacher" style="display: none;" />
-            <div class="account-type-card" id="teacherCard">
-              <div class="account-type-icon">👨‍🏫</div>
-              <div class="account-type-label">Teacher</div>
-            </div>
-          </div>
-        </div>
       </div>
       <div class="mb-3">
         <div class="form-check">
@@ -141,8 +114,25 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body" id="termsContent">
-          <!-- Terms content will be added here -->
-          <p>Terms & Conditions content goes here...</p>
+          <h6>A. Acceptance of Terms</h6>
+          <p>By clicking the registration checkbox and accessing the A.Eye service, you agree to be bound by these Terms of Service. If you do not agree to the Terms, you must not use the service.</p>
+
+          <h6>B. Account Security & Data</h6>
+          <p><strong>Account Data:</strong> We collect your Username, Email Address, and Password (stored as a secure hash) for account creation and login.</p>
+          <p><strong>Progress Data:</strong> We store data related to your Braille learning progress (e.g., stats, mastery levels) solely to provide the core service functionality.</p>
+          <p><strong>Responsibility:</strong> You are responsible for maintaining the confidentiality of your account password and for all activities that occur under your account.</p>
+
+          <h6>C. Use of Service</h6>
+          <p>The A.Eye platform is provided exclusively for the purpose of personal Braille learning and progress tracking.</p>
+          <p><strong>Prohibited Actions:</strong> You agree not to use the service for any unlawful purposes, attempt to gain unauthorized access to our system, or submit false information during registration.</p>
+
+          <h6>D. Intellectual Property</h6>
+          <p>All rights, title, and interest in the A.Eye software, design, and content belong exclusively to the A.Eye development team.</p>
+          <p>You are granted a limited license to use the service. You may not copy, reverse-engineer, or commercially exploit any part of the service.</p>
+
+          <h6>E. Limitation of Liability</h6>
+          <p>The A.Eye service is provided "AS IS" and "AS AVAILABLE" without warranties of any kind.</p>
+          <p>A.Eye shall not be liable for any damages (direct, indirect, or consequential) resulting from the use or inability to use the service, including data loss or service interruption.</p>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
@@ -160,8 +150,27 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body" id="privacyContent">
-          <!-- Privacy Policy content will be added here -->
-          <p>Privacy Policy content goes here...</p>
+          <h6>A. Data We Collect (Minimized Data Set)</h6>
+          <p>We only collect the minimum amount of data required to operate the A.Eye service:</p>
+          <p><strong>Account Identifiers:</strong> Username and Email Address.</p>
+          <p><strong>Authentication Data:</strong> Securely hashed Password.</p>
+          <p><strong>Usage Data:</strong> Your Braille learning progress, streak data, and attempts recorded by the application.</p>
+          <p><strong>Technical Data:</strong> Server logs for monitoring site stability.</p>
+
+          <h6>B. How We Use Your Data (Core Purpose Only)</h6>
+          <p>Your data is used strictly for the following purposes:</p>
+          <p><strong>Authentication:</strong> To verify your email address (via Brevo) and secure your account access.</p>
+          <p><strong>Service Provision:</strong> To track and display your personal Braille learning progress, which is the core function of A.Eye.</p>
+          <p><strong>Communication:</strong> To send essential administrative and security notices (e.g., password reset links).</p>
+
+          <h6>C. Data Sharing and Disclosure (Zero Tolerance)</h6>
+          <p>We do not sell, rent, trade, or share your personal data (Username, Email, or Progress Data) with any third parties. Your data is confidential and used only by the A.Eye development team for the purposes stated above.</p>
+
+          <h6>D. Data Security</h6>
+          <p>We employ industry-standard security measures, including SSL/TLS encryption for data transmission and cryptographic hashing for passwords (handled by Supabase), to protect your information.</p>
+
+          <h6>E. Contact Information</h6>
+          <p>If you have questions about this Privacy Policy or wish to request access or deletion of your data, please contact us at <a href="mailto:conde.215980@caloocan.sti.edu.ph">conde.215980@caloocan.sti.edu.ph</a></p>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>

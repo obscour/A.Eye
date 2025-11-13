@@ -1,7 +1,7 @@
 {
   "name": "a-eye",
   "version": "1.0.0",
-  "description": "A.Eye - Student Learning Dashboard",
+  "description": "A.Eye - Learning Dashboard",
   "type": "module",
   "dependencies": {
     "@getbrevo/brevo": "^1.0.1",
