@@ -1,6 +1,16 @@
 // FRONTEND Audit Log System
 // Sends logs to Vercel API instead of using Supabase directly
 
+async function getUserIP() {
+  try {
+    const res = await fetch('https://api.ipify.org?format=json');
+    const data = await res.json();
+    return data.ip || 'Unknown';
+  } catch {
+    return 'Unknown';
+  }
+}
+
 async function logActivity(activity, details = '', userId = null) {
   try {
     if (!userId) {
@@ -12,13 +22,16 @@ async function logActivity(activity, details = '', userId = null) {
       else return;
     }
 
+    const ipAddress = await getUserIP();
+
     await fetch('/api/audit-log', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         userId,
         activity,
-        details
+        details,
+        ipAddress
       })
     });
 

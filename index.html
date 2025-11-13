@@ -56,6 +56,14 @@
     <!-- Registration Form -->
     <form id="registerForm" style="display: none;">
       <div class="form-floating mb-3">
+        <input type="text" class="form-control" id="firstName" placeholder="First Name" />
+        <label for="firstName">First Name</label>
+      </div>
+      <div class="form-floating mb-3">
+        <input type="text" class="form-control" id="lastName" placeholder="Last Name" />
+        <label for="lastName">Last Name</label>
+      </div>
+      <div class="form-floating mb-3">
         <input type="text" class="form-control" id="registerUsername" placeholder="Username" required />
         <label for="registerUsername">Username</label>
       </div>
@@ -70,6 +78,25 @@
       <div class="form-floating mb-3">
         <input type="password" class="form-control" id="confirmPassword" placeholder="Confirm Password" required />
         <label for="confirmPassword">Confirm Password</label>
+      </div>
+      <div class="mb-4">
+        <label class="form-label fw-bold text-center d-block">Account Type</label>
+        <div class="account-type-container">
+          <div class="account-type-option" onclick="selectAccountType('student')">
+            <input type="radio" name="accountType" id="studentType" value="student" checked style="display: none;" />
+            <div class="account-type-card selected" id="studentCard">
+              <div class="account-type-icon">🎓</div>
+              <div class="account-type-label">Student</div>
+            </div>
+          </div>
+          <div class="account-type-option" onclick="selectAccountType('teacher')">
+            <input type="radio" name="accountType" id="teacherType" value="teacher" style="display: none;" />
+            <div class="account-type-card" id="teacherCard">
+              <div class="account-type-icon">👨‍🏫</div>
+              <div class="account-type-label">Teacher</div>
+            </div>
+          </div>
+        </div>
       </div>
       <div class="mb-3">
         <div class="form-check">

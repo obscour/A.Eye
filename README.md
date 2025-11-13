@@ -12,3 +12,4 @@ This is the companion website for the **A.Eye** device — an assistive tool tha
 
 This project is developed by a team of 4 students as part of a university thesis at STI.
 The website is developed by Dags.
+

@@ -11,8 +11,9 @@ export default async function handler(req, res) {
 
   try {
     const body = req.body || {}
-    const { username, email, password } = body
+    const { firstName, lastName, username, email, password, role } = body
 
+    // Support both old format (username, email, password) and new format (firstName, lastName, username, email, password, role)
     if (!username || !email || !password) {
       return res.status(400).json({ error: "Missing required fields." })
     }
@@ -36,26 +37,32 @@ export default async function handler(req, res) {
     // Hash the password before storing
     const hashedPassword = await hashPassword(password)
 
-    // Create new user (email_verified defaults to false)
+    // Build user object with optional fields
+    const userData = {
+      uuid: randomUUID(),
+      username,
+      email,
+      password: hashedPassword,
+      email_verified: false,
+      stats: (() => {
+        const initialStats = {};
+        for (let char of 'ABCDEFGHIJKLMNOPQRSTUVWXYZ') {
+          initialStats[char] = { streak: 0, correct: 0, mastery: 0, attempts: 0 };
+        }
+        return initialStats;
+      })(),
+      created_at: new Date().toISOString(),
+    }
+
+    // Add optional fields if provided
+    if (firstName) userData.first_name = firstName
+    if (lastName) userData.last_name = lastName
+    if (role) userData.role = role
+
+    // Create new user
     const { data, error } = await supabase
       .from("users")
-      .insert([
-        {
-          uuid: randomUUID(),
-          username,
-          email,
-          password: hashedPassword,
-          email_verified: false,
-          stats: (() => {
-            const initialStats = {};
-            for (let char of 'ABCDEFGHIJKLMNOPQRSTUVWXYZ') {
-              initialStats[char] = { streak: 0, correct: 0, mastery: 0, attempts: 0 };
-            }
-            return initialStats;
-          })(),
-          created_at: new Date().toISOString(),
-        },
-      ])
+      .insert([userData])
       .select()
       .single()
 
@@ -96,8 +103,15 @@ export default async function handler(req, res) {
     const isDevelopment = !process.env.VERCEL || process.env.VERCEL_ENV === 'development'
     const shouldReturnLink = isDevelopment || !emailResult.success
 
+    // Return user with id field for frontend compatibility
+    const user = {
+      ...data,
+      id: data.uuid
+    }
+
     return res.status(200).json({ 
       message: "Registration successful. Please check your email to verify your account.",
+      user,
       // Only return link in development or if email sending failed (for testing/debugging)
       ...(shouldReturnLink && { verificationLink })
     })

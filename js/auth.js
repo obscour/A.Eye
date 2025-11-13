@@ -113,7 +113,7 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
     }
 
     // Check if email is verified
-    if (!result.user.email_verified) {
+    if (result.user.email_verified === false) {
       showMessage("error", "Please verify your email before logging in. Check your inbox for the verification link.");
       return;
     }
@@ -124,15 +124,19 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
     // Store user in localStorage
     localStorage.setItem("user", JSON.stringify(result.user));
     
-    // Also store in 'admin' key if user is admin (for admin-dashboard compatibility)
+    // Also store in appropriate key based on role
     if (result.user.role === "admin") {
       localStorage.setItem("admin", JSON.stringify(result.user));
+    } else if (result.user.role === "teacher") {
+      localStorage.setItem("teacher", JSON.stringify(result.user));
     }
 
     // Redirect based on role
     setTimeout(() => {
       if (result.user.role === "admin") {
         window.location.href = "admin-dashboard.html";
+      } else if (result.user.role === "teacher") {
+        window.location.href = "teacher-dashboard.html";
       } else {
         window.location.href = "dashboard.html";
       }
@@ -164,14 +168,17 @@ document.getElementById("registerForm").addEventListener("submit", async (e) => 
   e.preventDefault();
   hideMessages();
 
+  const firstName = document.getElementById("firstName")?.value.trim() || "";
+  const lastName = document.getElementById("lastName")?.value.trim() || "";
   const username = document.getElementById("registerUsername").value.trim();
   const email = document.getElementById("registerEmail").value.trim();
   const password = document.getElementById("registerPassword").value.trim();
   const confirmPassword = document.getElementById("confirmPassword").value.trim();
+  const accountType = document.querySelector('input[name="accountType"]:checked')?.value || "student";
   const agreeToTerms = document.getElementById("agreeToTerms").checked;
 
   if (!username || !email || !password || !confirmPassword) {
-    showMessage("error", "Please fill in all fields.");
+    showMessage("error", "Please fill in all required fields.");
     return;
   }
 
@@ -186,14 +193,21 @@ document.getElementById("registerForm").addEventListener("submit", async (e) => 
   }
 
   try {
+    const registerData = {
+      username,
+      email,
+      password,
+    };
+
+    // Add optional fields if provided
+    if (firstName) registerData.firstName = firstName;
+    if (lastName) registerData.lastName = lastName;
+    if (accountType) registerData.role = accountType;
+
     const res = await fetch("/api/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        username,
-        email,
-        password,
-      }),
+      body: JSON.stringify(registerData),
     });
 
     const result = await res.json();
@@ -370,11 +384,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const userStr = localStorage.getItem("user");
     if (userStr) {
       const user = JSON.parse(userStr);
-      if (user && user.email_verified) {
+      if (user && (user.email_verified !== false)) {
         // Small delay to prevent redirect loops
         setTimeout(() => {
           if (user.role === "admin") {
             window.location.href = "admin-dashboard.html";
+          } else if (user.role === "teacher") {
+            window.location.href = "teacher-dashboard.html";
           } else {
             window.location.href = "dashboard.html";
           }

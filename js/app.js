@@ -153,7 +153,7 @@ async function displayCurrentUser() {
     if (!userStr) throw new Error('No user logged in');
     
     const user = JSON.parse(userStr);
-    // Format name as LASTNAME, FIRSTNAME (USERNAME)
+    // Format name as LASTNAME, FIRSTNAME (USERNAME) if available, otherwise just username
     const formattedName = formatUserName(user);
     const welcomeText = `Welcome! <strong>${formattedName}</strong>`;
 
