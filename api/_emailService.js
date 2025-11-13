@@ -59,7 +59,7 @@ function getBaseUrl(req) {
     }
     // In production, if we have a request origin that matches our domain, use it
     // This handles www vs non-www automatically
-    if (origin.includes('aeyebraille.mom')) {
+    if (origin.includes('aeyebraille.online')) {
       return origin
     }
   }
@@ -71,7 +71,7 @@ function getBaseUrl(req) {
       return referer
     }
     // In production, if referer matches our domain, use it
-    if (referer.includes('aeyebraille.mom')) {
+    if (referer.includes('aeyebraille.online')) {
       return referer
     }
   }

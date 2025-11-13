@@ -118,6 +118,8 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
     setTimeout(() => {
       if (result.user.role === "admin") {
         window.location.href = "admin-dashboard.html";
+      } else if (result.user.role === "teacher") {
+        window.location.href = "teacher-dashboard.html";
       } else {
         window.location.href = "dashboard.html";
       }
@@ -362,6 +364,8 @@ document.addEventListener("DOMContentLoaded", () => {
         setTimeout(() => {
           if (user.role === "admin") {
             window.location.href = "admin-dashboard.html";
+          } else if (user.role === "teacher") {
+            window.location.href = "teacher-dashboard.html";
           } else {
             window.location.href = "dashboard.html";
           }

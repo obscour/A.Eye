@@ -7,6 +7,15 @@ body {
     background-size: cover;
   }
 
+  /* Teacher Dashboard - Use same background as student dashboard */
+  body:has(.teacher-dashboard-container) {
+    background-image: url(indexBGimg.jpg);
+    background-repeat: no-repeat;
+    background-position: center;
+    background-attachment: fixed;
+    background-size: cover;
+  }
+
   /* Login Box Styles */
   .login-box {
     backdrop-filter: blur(10px);
@@ -53,6 +62,31 @@ body {
     transform: translateY(-2px);
   }
   
+  /* Form Checkbox Styles */
+  .form-check-input {
+    width: 1.25rem;
+    height: 1.25rem;
+    border: 2px solid #007bff;
+    cursor: pointer;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+  }
+
+  .form-check-input:focus {
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.2);
+    border-color: #0056b3;
+  }
+
+  .form-check-input:checked {
+    background-color: #007bff;
+    border-color: #007bff;
+  }
+
+  .form-check-label {
+    font-weight: 600;
+    color: #1f2933;
+    cursor: pointer;
+  }
+
   /* Responsive Design */
   @media (max-width: 576px) {
     .login-box {
@@ -316,7 +350,278 @@ body {
     }
   }
 
+
+  /* Teacher Dashboard - General Card Improvements */
+  .teacher-dashboard-container .card {
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    border: 1px solid #e9ecef;
+    background-color: #ffffff;
+  }
+  
+  /* Make cards full height */
+  .teacher-dashboard-container {
+    min-height: calc(100vh - 76px);
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .teacher-dashboard-container .row {
+    flex: 1;
+    min-height: 0;
+  }
+  
+  .teacher-dashboard-container .col-lg-6 {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .teacher-dashboard-container .card {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+  }
+  
+  .teacher-dashboard-container .card-body {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  /* Fix table container to use available space */
+  .teacher-dashboard-container .table-responsive {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .teacher-dashboard-container .table-responsive table {
+    margin-bottom: 0;
+  }
+
+  .card-header {
+    border-radius: 12px 12px 0 0 !important;
+    background-color: #ffffff;
+  }
+
+  /* Teacher Dashboard Sections Table */
+  #sectionsList tr {
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  #sectionsList tr:hover {
+    background-color: #f0f7ff;
+    transform: translateX(2px);
+  }
+
+  #sectionsList tr:hover td:first-child {
+    background-color: #f0f7ff;
+  }
+
+  #sectionsList code {
+    font-size: 0.85rem;
+    padding: 0.35rem 0.65rem;
+    background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+    border: 1px solid #90caf9;
+    border-radius: 6px;
+    font-weight: 600;
+    color: #1976d2;
+  }
+
+  #sectionsList .badge {
+    font-size: 0.85rem;
+    padding: 0.4rem 0.7rem;
+    border-radius: 12px;
+    font-weight: 600;
+  }
+
+  /* Section Content Toggle - Ensure only one is visible */
+  #sectionContent.section-hidden,
+  #sectionContent[style*="display: none"] {
+    display: none !important;
+  }
+
+  #sectionContentEmpty.section-hidden,
+  #sectionContentEmpty[style*="display: none"] {
+    display: none !important;
+  }
+
+  #sectionContent:not(.section-hidden) {
+    display: block !important;
+  }
+
+  #sectionContentEmpty:not(.section-hidden) {
+    display: flex !important;
+  }
+
+  /* Hamburger menu button */
+  .dropdown button[data-bs-toggle="dropdown"] {
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    padding: 0.4rem 0.6rem;
+    transition: all 0.2s ease;
+  }
+
+  .dropdown button[data-bs-toggle="dropdown"]:hover {
+    background-color: #f0f7ff;
+    border-color: #90caf9;
+    transform: scale(1.05);
+  }
+
+  .dropdown button[data-bs-toggle="dropdown"]:focus {
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    border-color: #90caf9;
+  }
+
+  /* Dropdown menu improvements */
+  .dropdown-menu {
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border: 1px solid #e9ecef;
+    padding: 0.5rem;
+  }
+
+  .dropdown-item {
+    border-radius: 6px;
+    padding: 0.5rem 1rem;
+    transition: all 0.2s ease;
+  }
+
+  .dropdown-item:hover {
+    background-color: #f0f7ff;
+    transform: translateX(4px);
+  }
+
+  /* Button improvements */
+  .btn {
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+  }
+
+  .btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  }
+
+  .btn:active {
+    transform: translateY(0);
+  }
+
+  /* Table improvements */
+  .table {
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .table thead th {
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+    color: #495057;
+    background-color: #f8f9fa;
+    border-bottom: 2px solid #dee2e6;
+  }
+
+  .table tbody td {
+    vertical-align: middle;
+    padding: 1rem 0.75rem;
+  }
+
+  /* Input group improvements */
+  .input-group-text {
+    border-radius: 8px 0 0 8px;
+    background-color: #f8f9fa;
+    border-color: #ced4da;
+  }
+
+  .form-control, .form-select {
+    border-radius: 8px;
+    transition: all 0.2s ease;
+  }
+
+  .form-control:focus, .form-select:focus {
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.15);
+  }
+
+  /* Empty state improvements */
+  #sectionContentEmpty {
+    background: #ffffff;
+  }
+
+  /* Modal improvements */
+  .modal-content {
+    border-radius: 12px;
+    border: none;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  }
+
+  .modal-header {
+    padding: 1.25rem 1.5rem;
+  }
+
+  .modal-body {
+    padding: 1.5rem;
+  }
+
+  .modal-footer {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid #e9ecef;
+  }
+
+  /* Navbar improvements */
+  .navbar {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  .navbar-brand {
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+
+  /* Badge improvements */
+  .badge {
+    padding: 0.4rem 0.7rem;
+    font-weight: 500;
+    border-radius: 12px;
+  }
+
+  /* Teacher Dashboard Desktop Layout */
+  @media (min-width: 992px) {
+    .teacher-dashboard-container {
+      padding-bottom: 2rem;
+    }
+    
+    .teacher-dashboard-container .container-fluid {
+      max-width: 1400px;
+      height: 100%;
+    }
+    
+    .teacher-dashboard-container .col-lg-6 {
+      padding-left: 1rem;
+      padding-right: 1rem;
+    }
+    
+    .teacher-dashboard-container .card {
+      margin-bottom: 0;
+    }
+  }
+
   /* Teacher Dashboard Mobile Styles */
+  @media (max-width: 991.98px) {
+    .col-lg-6 {
+      margin-bottom: 1.5rem;
+    }
+  }
+
   @media (max-width: 767.98px) {
     .navbar-brand {
       font-size: 1rem;
@@ -335,6 +640,23 @@ body {
       flex-wrap: wrap;
       gap: 0.5rem;
     }
+    /* Mobile: Better close button placement in section header */
+    #sectionContent .card-header {
+      flex-direction: row;
+    }
+    #sectionContent .card-header > div:first-child {
+      width: 100%;
+    }
+    #sectionContent .card-header > div:first-child > div:first-child {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    #sectionContent .card-header > div:last-child {
+      width: 100%;
+      margin-top: 0.5rem;
+    }
     .form-select.form-select-sm {
       width: 100% !important;
       margin-bottom: 0.5rem;
@@ -342,5 +664,13 @@ body {
     .table-responsive {
       margin: 0 -0.5rem;
       padding: 0 0.5rem;
+    }
+    #sectionsList th:nth-child(2),
+    #sectionsList td:nth-child(2) {
+      min-width: 120px;
+    }
+    .btn-sm {
+      font-size: 0.8rem;
+      padding: 0.35rem 0.65rem;
     }
   }
