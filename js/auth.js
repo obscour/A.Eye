@@ -22,6 +22,15 @@ function toggleForms() {
     formTitle.textContent = "Register";
   }
 
+  // Reset resend email state
+  registeredEmail = null;
+  const resendStatus = document.getElementById("resendEmailStatus");
+  if (resendStatus) {
+    resendStatus.style.display = "none";
+    resendStatus.className = "mt-2";
+    resendStatus.innerHTML = "";
+  }
+
   hideMessages();
 }
 
@@ -148,6 +157,9 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
+// Store registration email for resend functionality
+let registeredEmail = null;
+
 document.getElementById("registerForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   hideMessages();
@@ -187,6 +199,9 @@ document.getElementById("registerForm").addEventListener("submit", async (e) => 
     const result = await res.json();
     if (!res.ok) throw new Error(result.error || "Registration failed");
 
+    // Store email for resend functionality
+    registeredEmail = email;
+
     // Hide form and show verification message
     document.getElementById("registerForm").style.display = "none";
     document.getElementById("verificationMessage").style.display = "block";
@@ -195,10 +210,87 @@ document.getElementById("registerForm").addEventListener("submit", async (e) => 
     // Reset form
     document.getElementById("registerForm").reset();
     document.getElementById("registerBtn").disabled = true;
+    
+    // Reset resend email status
+    const resendStatus = document.getElementById("resendEmailStatus");
+    if (resendStatus) {
+      resendStatus.style.display = "none";
+      resendStatus.className = "mt-2";
+      resendStatus.innerHTML = "";
+    }
   } catch (err) {
     showMessage("error", err.message);
   }
 });
+
+// ===============================
+// RESEND VERIFICATION EMAIL HANDLER
+// ===============================
+async function resendVerificationEmail() {
+  if (!registeredEmail) {
+    showMessage("error", "No email found. Please register again.");
+    return;
+  }
+
+  const resendBtn = document.getElementById("resendEmailBtn");
+  const resendStatus = document.getElementById("resendEmailStatus");
+  
+  // Disable button and show loading state
+  if (resendBtn) {
+    resendBtn.disabled = true;
+    resendBtn.textContent = "Sending...";
+  }
+
+  // Clear previous status
+  if (resendStatus) {
+    resendStatus.style.display = "none";
+    resendStatus.className = "mt-2";
+    resendStatus.innerHTML = "";
+  }
+
+  try {
+    const res = await fetch("/api/resend-verification-email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ identifier: registeredEmail }),
+    });
+
+    const result = await res.json();
+
+    if (!res.ok) {
+      throw new Error(result.error || "Failed to resend email");
+    }
+
+    // Show success message
+    if (resendStatus) {
+      resendStatus.style.display = "block";
+      resendStatus.className = "mt-2 alert alert-success";
+      resendStatus.innerHTML = `<small>${result.message || "Verification email sent successfully!"}</small>`;
+    }
+
+    // In development, show the link in console (for testing)
+    if (result.verificationLink) {
+      console.log("Verification link (dev/testing only):", result.verificationLink);
+      console.warn("⚠️ In production, this link should be sent via email only!");
+    }
+  } catch (err) {
+    // Show error message
+    if (resendStatus) {
+      resendStatus.style.display = "block";
+      resendStatus.className = "mt-2 alert alert-danger";
+      resendStatus.innerHTML = `<small>${err.message || "Failed to resend email"}</small>`;
+    }
+  } finally {
+    // Re-enable button
+    if (resendBtn) {
+      resendBtn.disabled = false;
+      resendBtn.textContent = "Resend Verification Email";
+    }
+  }
+}
+
+// Make function globally available
+window.resendVerificationEmail = resendVerificationEmail;
 
 // ===============================
 // FORGOT PASSWORD HANDLER

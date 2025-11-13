@@ -1,4 +1,5 @@
 import supabase from './_supabaseClient.js'
+import { hashPassword } from './_passwordUtils.js'
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -50,7 +51,8 @@ export default async function handler(req, res) {
       if (password.length < 6) {
         return res.status(400).json({ error: 'Password must be at least 6 characters long' })
       }
-      updateData.password = password
+      // Hash the password before updating
+      updateData.password = await hashPassword(password)
     }
 
     if (Object.keys(updateData).length === 0) {

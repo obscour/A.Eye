@@ -49,21 +49,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Store user in localStorage
     localStorage.setItem('user', JSON.stringify(result.user));
-    
-    // Also store in 'admin' key if user is admin (for admin-dashboard compatibility)
-    if (result.user.role === 'admin') {
-      localStorage.setItem('admin', JSON.stringify(result.user));
-    }
 
     showMessage('success', 'Email verified successfully! Redirecting to dashboard...');
 
     // Redirect to dashboard after 2 seconds
     setTimeout(() => {
-      if (result.user.role === 'admin') {
-        window.location.href = 'admin-dashboard.html';
-      } else {
-        window.location.href = 'dashboard.html';
-      }
+      window.location.href = '/dashboard.html';
     }, 2000);
   } catch (err) {
     showMessage('error', err.message || 'Verification failed. Please try again or request a new verification link.');

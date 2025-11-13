@@ -1,4 +1,5 @@
 import supabase from './_supabaseClient.js'
+import { comparePassword, hashPassword } from './_passwordUtils.js'
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -44,7 +45,29 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'User not found', details: `No user found with ${column}: ${identifier}` })
     }
 
-    if (data.password !== password) {
+    // Check if password is hashed (bcrypt hashes start with $2a$, $2b$, or $2y$)
+    const isHashed = data.password.startsWith('$2a$') || data.password.startsWith('$2b$') || data.password.startsWith('$2y$')
+    
+    let passwordMatch = false
+    if (isHashed) {
+      // Compare with hashed password
+      passwordMatch = await comparePassword(password, data.password)
+    } else {
+      // Backward compatibility: compare plaintext (for existing users)
+      // Note: This should be removed after all users have hashed passwords
+      passwordMatch = data.password === password
+      
+      // If password matches and it's plaintext, hash it for next time
+      if (passwordMatch) {
+        const hashedPassword = await hashPassword(password)
+        await supabase
+          .from('users')
+          .update({ password: hashedPassword })
+          .eq('uuid', data.uuid)
+      }
+    }
+    
+    if (!passwordMatch) {
       return res.status(401).json({ error: 'Invalid password' })
     }
 

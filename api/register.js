@@ -2,6 +2,7 @@ import supabase from './_supabaseClient.js'
 import { randomUUID } from 'crypto'
 import { randomBytes } from 'crypto'
 import { sendVerificationEmail, getBaseUrl } from './_emailService.js'
+import { hashPassword } from './_passwordUtils.js'
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -32,6 +33,9 @@ export default async function handler(req, res) {
     const verificationToken = randomBytes(32).toString('hex')
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours from now
 
+    // Hash the password before storing
+    const hashedPassword = await hashPassword(password)
+
     // Create new user (email_verified defaults to false)
     const { data, error } = await supabase
       .from("users")
@@ -40,7 +44,7 @@ export default async function handler(req, res) {
           uuid: randomUUID(),
           username,
           email,
-          password, // ⚠️ Plaintext for now (add hashing later)
+          password: hashedPassword,
           email_verified: false,
           stats: (() => {
             const initialStats = {};
@@ -74,7 +78,10 @@ export default async function handler(req, res) {
 
     // Get the base URL from environment or request
     const baseUrl = getBaseUrl(req)
-    const verificationLink = `${baseUrl}/verify-email.html?token=${verificationToken}`
+    const verificationLink = `${baseUrl}/api/verify-email?token=${verificationToken}`
+    
+    // Log the verification link for debugging (remove in production if needed)
+    console.log('Generated verification link:', verificationLink)
 
     // Send verification email
     const emailResult = await sendVerificationEmail(email, username, verificationLink, req)

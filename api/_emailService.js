@@ -38,13 +38,15 @@ try {
  * Priority: Explicit production URLs > Request headers (for local dev) > VERCEL_URL
  */
 function getBaseUrl(req) {
-  // If production URL is explicitly set, use it (allows testing production URLs locally)
-  if (process.env.PRODUCTION_URL) {
-    return process.env.PRODUCTION_URL
-  }
-  
+  // In production, prioritize NEXT_PUBLIC_APP_URL (usually the canonical domain with www)
+  // This ensures consistency with how users access the site
   if (process.env.NEXT_PUBLIC_APP_URL) {
     return process.env.NEXT_PUBLIC_APP_URL
+  }
+  
+  // Fallback to PRODUCTION_URL if NEXT_PUBLIC_APP_URL is not set
+  if (process.env.PRODUCTION_URL) {
+    return process.env.PRODUCTION_URL
   }
   
   // When running locally (vercel dev), prioritize request headers
@@ -55,12 +57,21 @@ function getBaseUrl(req) {
     if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
       return origin
     }
+    // In production, if we have a request origin that matches our domain, use it
+    // This handles www vs non-www automatically
+    if (origin.includes('aeyebraille.mom')) {
+      return origin
+    }
   }
   
   if (req?.headers?.referer) {
     const referer = req.headers.referer.split('/').slice(0, 3).join('/')
     // If referer is localhost, use it (local development)
     if (referer.includes('localhost') || referer.includes('127.0.0.1')) {
+      return referer
+    }
+    // In production, if referer matches our domain, use it
+    if (referer.includes('aeyebraille.mom')) {
       return referer
     }
   }
@@ -71,9 +82,15 @@ function getBaseUrl(req) {
     return 'http://localhost:3000'
   }
   
-  // Production: Check for Vercel URL first
+  // Production: Check for Vercel URL
+  // VERCEL_URL is the deployment URL (might be preview or production)
+  // VERCEL_BRANCH_URL is the branch-specific URL
   if (process.env.VERCEL_URL) {
-    return `https://${process.env.VERCEL_URL}`
+    // Ensure it includes https://
+    const url = process.env.VERCEL_URL.startsWith('http') 
+      ? process.env.VERCEL_URL 
+      : `https://${process.env.VERCEL_URL}`
+    return url
   }
   
   // Last resort: localhost

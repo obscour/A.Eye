@@ -33,10 +33,10 @@ async function validateToken() {
   document.getElementById('loading-message').style.display = 'block';
 
   try {
-    const res = await fetch('/api/validate-reset-token', {
+    const res = await fetch('/api/reset-password', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token })
+      body: JSON.stringify({ token, action: 'validate' })
     });
 
     const result = await res.json();

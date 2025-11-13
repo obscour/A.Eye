@@ -4,6 +4,8 @@
       "source": "/api/:path*",
       "destination": "/api/:path*"
     }
-  ]
+  ],
+  "cleanUrls": false,
+  "trailingSlash": false
 }
 

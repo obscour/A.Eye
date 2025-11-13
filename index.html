@@ -93,6 +93,13 @@
         <p class="text-muted small mb-0">Check your inbox and click the verification link to activate your account.</p>
       </div>
       <div class="mt-3">
+        <p class="text-muted small mb-2">Didn't receive the email?</p>
+        <button type="button" class="btn btn-outline-primary btn-sm" id="resendEmailBtn" onclick="resendVerificationEmail()">
+          Resend Verification Email
+        </button>
+        <div id="resendEmailStatus" class="mt-2" style="display: none;"></div>
+      </div>
+      <div class="mt-3">
         <a href="#" class="text-decoration-none" onclick="toggleForms()">Back to Login</a>
       </div>
     </div>
