@@ -238,10 +238,10 @@ async function resendVerificationEmail() {
   }
 
   try {
-    const res = await fetch("/api/resend-verification-email", {
+    const res = await fetch("/api/verify-email", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ identifier: registeredEmail }),
+      body: JSON.stringify({ action: 'resend', identifier: registeredEmail }),
     });
 
     const result = await res.json();
@@ -317,7 +317,7 @@ document.getElementById('forgotPasswordForm').addEventListener('submit', async (
   submitBtn.textContent = 'Sending...';
 
   try {
-    const res = await fetch('/api/request-password-reset', {
+    const res = await fetch('/api/reset-password', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ identifier })

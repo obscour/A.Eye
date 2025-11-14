@@ -6,10 +6,9 @@ This is the companion website for the **A.Eye** device — an assistive tool tha
 
 - Dashboard for learners to track progress.
 - Tracks performance per Braille letter.
-- QR for easier log in.
+- QR Code for Device Pairing.
 
 ## Team
 
 This project is developed by a team of 4 students as part of a university thesis at STI.
 The website is developed by Dags.
-

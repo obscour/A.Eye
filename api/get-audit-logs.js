@@ -1,23 +1,27 @@
 import supabase from './_supabaseClient.js'
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
+  // Support both GET and POST methods
+  if (req.method !== 'GET' && req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
   try {
-    const body = req.body || {}
-    const { userId } = body
+    // Get userId from query params (GET) or body (POST)
+    const userId = req.method === 'GET' 
+      ? req.query.userId 
+      : (req.body || {}).userId
 
-    if (!userId) {
-      return res.status(400).json({ error: 'Missing userId' })
-    }
-
-    const { data, error } = await supabase
+    let query = supabase
       .from('audit_logs')
       .select('*')
-      .eq('user_id', userId)
-      .order('timestamp', { ascending: false })
+
+    // If userId is provided, filter by user; otherwise return all logs
+    if (userId) {
+      query = query.eq('user_id', userId)
+    }
+
+    const { data, error } = await query.order('timestamp', { ascending: false })
 
     if (error) {
       console.error('Error fetching audit logs:', error)

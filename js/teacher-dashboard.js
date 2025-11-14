@@ -225,10 +225,11 @@ async function togglePinSection(sectionId, pinStatus) {
     const teacher = checkTeacherAuth();
     if (!teacher) return;
 
-    const response = await fetch('/api/toggle-pin-section', {
+    const response = await fetch('/api/section-actions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
+        action: 'toggle-pin',
         sectionId: sectionId,
         teacherId: teacher.id,
         pinned: pinStatus
@@ -270,10 +271,11 @@ async function deleteSection(sectionId, sectionName) {
     const teacher = checkTeacherAuth();
     if (!teacher) return;
 
-    const response = await fetch('/api/delete-section', {
+    const response = await fetch('/api/section-actions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
+        action: 'delete',
         sectionId: sectionId,
         teacherId: teacher.id
       })
@@ -558,10 +560,11 @@ async function inviteStudent() {
     const teacher = checkTeacherAuth();
     if (!teacher) return;
 
-    const response = await fetch('/api/invite-student', {
+    const response = await fetch('/api/student-actions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
+        action: 'invite',
         sectionId: currentSection.id,
         identifier: identifier
       })
@@ -603,10 +606,11 @@ async function removeStudentFromSection(studentId) {
     const teacher = checkTeacherAuth();
     if (!teacher) return;
 
-    const response = await fetch('/api/remove-student', {
+    const response = await fetch('/api/student-actions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
+        action: 'remove',
         sectionId: currentSection.id,
         studentId: studentId
       })

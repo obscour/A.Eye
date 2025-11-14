@@ -71,7 +71,8 @@ async function getAuditLogs(userId) {
 
 async function getAllAuditLogs() {
   try {
-    const response = await fetch('/api/get-all-audit-logs');
+    // Use the combined endpoint without userId to get all logs
+    const response = await fetch('/api/get-audit-logs');
     
     if (!response.ok) {
       throw new Error(`Failed to fetch audit logs: ${response.status}`);
