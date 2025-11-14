@@ -7,8 +7,14 @@ export default async function handler(req, res) {
   }
 
   try {
+    // Check if Supabase client is initialized
+    if (!supabase) {
+      console.error('Supabase client not initialized')
+      return res.status(500).json({ error: 'Server configuration error: Supabase client not initialized' })
+    }
+
     const body = req.body || {}
-    const { userId, activity, details, ipAddress } = body
+    const { userId, activity, details } = body
 
     if (!userId || !activity) {
       return res.status(400).json({ error: 'Missing required fields: userId and activity' })
@@ -23,19 +29,31 @@ export default async function handler(req, res) {
         user_id: userId,
         activity,
         details: details || '',
-        ip_address: ipAddress || 'Unknown',
         timestamp
       }])
       .select()
 
     if (error) {
       console.error('Error saving audit log:', error)
-      return res.status(500).json({ error: error.message })
+      // Provide more detailed error information
+      const errorDetails = {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint
+      }
+      return res.status(500).json({ 
+        error: 'Failed to save audit log',
+        details: errorDetails
+      })
     }
 
     return res.status(200).json({ success: true, data })
   } catch (err) {
     console.error('Audit log error:', err)
-    return res.status(500).json({ error: err.message || 'Internal server error' })
+    return res.status(500).json({ 
+      error: err.message || 'Internal server error',
+      type: err.name || 'UnknownError'
+    })
   }
 }
