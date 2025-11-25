@@ -1,4 +1,5 @@
-import supabase from './_supabaseClient.js'
+import supabase from '../lib/_supabaseClient.js'
+import { randomBytes, randomUUID } from 'crypto'
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -6,16 +7,67 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { action, sectionId, teacherId, pinned } = req.body
+    const { action, sectionId, teacherId, pinned, name } = req.body
 
-    if (!action || !sectionId || !teacherId) {
-      return res.status(400).json({ error: 'Missing action, sectionId, or teacherId' })
+    if (!action || !teacherId) {
+      return res.status(400).json({ error: 'Missing action or teacherId' })
+    }
+
+    if (action === 'create') {
+      if (!name) {
+        return res.status(400).json({ error: 'Missing name for create action' })
+      }
+
+      // Generate a unique section code (6 characters)
+      const code = randomBytes(3).toString('hex').toUpperCase()
+
+      // Create the section
+      const { data, error } = await supabase
+        .from('sections')
+        .insert([{
+          teacher_id: teacherId,
+          name: name.trim(),
+          code: code,
+          created_at: new Date().toISOString()
+        }])
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Error creating section:', error)
+        return res.status(500).json({ error: error.message })
+      }
+
+      // Log audit event for section creation
+      try {
+        // Store timestamp in UTC (default ISO format)
+        const timestamp = new Date().toISOString();
+        
+        await supabase
+          .from('audit_log')
+          .insert([{
+            id: randomUUID(),
+            user_id: teacherId,
+            activity: 'SECTION_CREATED',
+            details: `Created section: ${name.trim()}`,
+            timestamp
+          }]);
+      } catch (auditError) {
+        console.error('Error logging section creation:', auditError);
+        // Don't fail the request if audit logging fails
+      }
+
+      return res.status(200).json({ section: data })
+    }
+
+    if (!sectionId) {
+      return res.status(400).json({ error: 'Missing sectionId' })
     }
 
     // Verify the section belongs to this teacher
     const { data: section, error: checkError } = await supabase
       .from('sections')
-      .select('id, teacher_id')
+      .select('id, teacher_id, name')
       .eq('id', sectionId)
       .single()
 
@@ -28,6 +80,9 @@ export default async function handler(req, res) {
     }
 
     if (action === 'delete') {
+      // Store section name before deletion for audit log
+      const sectionName = section.name || sectionId;
+      
       // Delete section (cascade will delete section_students automatically)
       const { error } = await supabase
         .from('sections')
@@ -37,6 +92,25 @@ export default async function handler(req, res) {
       if (error) {
         console.error('Error deleting section:', error)
         return res.status(500).json({ error: error.message })
+      }
+
+      // Log audit event for section deletion
+      try {
+        // Store timestamp in UTC (default ISO format)
+        const timestamp = new Date().toISOString();
+        
+        await supabase
+          .from('audit_log')
+          .insert([{
+            id: randomUUID(),
+            user_id: teacherId,
+            activity: 'SECTION_DELETED',
+            details: `Deleted section: ${sectionName}`,
+            timestamp
+          }]);
+      } catch (auditError) {
+        console.error('Error logging section deletion:', auditError);
+        // Don't fail the request if audit logging fails
       }
 
       return res.status(200).json({ message: 'Section deleted successfully' })
@@ -60,7 +134,7 @@ export default async function handler(req, res) {
 
       return res.status(200).json({ section: data })
     } else {
-      return res.status(400).json({ error: 'Invalid action. Use "delete" or "toggle-pin"' })
+      return res.status(400).json({ error: 'Invalid action. Use "create", "delete", or "toggle-pin"' })
     }
   } catch (err) {
     console.error('Section action error:', err)

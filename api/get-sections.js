@@ -1,24 +1,42 @@
-import supabase from './_supabaseClient.js'
+import supabase from '../lib/_supabaseClient.js'
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
+  if (req.method !== 'GET' && req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
   try {
-    const { teacherId } = req.body
+    const { teacherId, all } = req.body || req.query || {}
 
-    if (!teacherId) {
-      return res.status(400).json({ error: 'Missing teacherId' })
-    }
-
-    // Get all sections for this teacher
-    const { data: sections, error } = await supabase
+    let query = supabase
       .from('sections')
       .select('*')
-      .eq('teacher_id', teacherId)
-      .order('pinned', { ascending: false })
-      .order('created_at', { ascending: false })
+
+    // If all=true, get all sections with teacher info (for MIS)
+    if (all === 'true' || all === true) {
+      query = supabase
+        .from('sections')
+        .select(`
+          *,
+          users!sections_teacher_id_fkey (
+            uuid,
+            username,
+            email
+          )
+        `)
+        .order('created_at', { ascending: false })
+    } else {
+      // Get sections for specific teacher
+      if (!teacherId) {
+        return res.status(400).json({ error: 'Missing teacherId' })
+      }
+      query = query
+        .eq('teacher_id', teacherId)
+        .order('pinned', { ascending: false })
+        .order('created_at', { ascending: false })
+    }
+
+    const { data: sections, error } = await query
 
     if (error) {
       console.error('Error fetching sections:', error)
@@ -37,10 +55,17 @@ export default async function handler(req, res) {
           console.error('Error counting students:', countError)
         }
         
-        return {
+        const result = {
           ...section,
           student_count: count || 0
         }
+
+        // If getting all sections, include teacher info
+        if (all === 'true' || all === true) {
+          result.teacher = section.users || null
+        }
+        
+        return result
       })
     )
 

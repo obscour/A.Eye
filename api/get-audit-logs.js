@@ -1,4 +1,4 @@
-import supabase from './_supabaseClient.js'
+import supabase from '../lib/_supabaseClient.js'
 
 export default async function handler(req, res) {
   // Support both GET and POST methods
@@ -13,7 +13,7 @@ export default async function handler(req, res) {
       : (req.body || {}).userId
 
     let query = supabase
-      .from('audit_logs')
+      .from('audit_log')
       .select('*')
 
     // If userId is provided, filter by user; otherwise return all logs

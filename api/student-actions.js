@@ -1,4 +1,5 @@
-import supabase from './_supabaseClient.js'
+import supabase from '../lib/_supabaseClient.js'
+import { randomUUID } from 'crypto'
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -63,6 +64,34 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: error.message })
       }
 
+      // Log audit event for student added to section
+      try {
+        // Get section and teacher info for audit log
+        const { data: sectionData } = await supabase
+          .from('sections')
+          .select('name, teacher_id')
+          .eq('id', sectionId)
+          .single();
+        
+        if (sectionData) {
+          // Store timestamp in UTC (default ISO format)
+          const timestamp = new Date().toISOString();
+          
+          await supabase
+            .from('audit_log')
+            .insert([{
+              id: randomUUID(),
+              user_id: sectionData.teacher_id,
+              activity: 'STUDENT_ADDED',
+              details: `Added student ${student.username} to section: ${sectionData.name}`,
+              timestamp
+            }]);
+        }
+      } catch (auditError) {
+        console.error('Error logging student addition:', auditError);
+        // Don't fail the request if audit logging fails
+      }
+
       return res.status(200).json({ 
         message: 'Student added to section successfully',
         student: {
@@ -86,6 +115,40 @@ export default async function handler(req, res) {
       if (error) {
         console.error('Error removing student from section:', error)
         return res.status(500).json({ error: error.message })
+      }
+
+      // Log audit event for student removed from section
+      try {
+        // Get section, teacher, and student info for audit log
+        const { data: sectionData } = await supabase
+          .from('sections')
+          .select('name, teacher_id')
+          .eq('id', sectionId)
+          .single();
+        
+        const { data: studentData } = await supabase
+          .from('users')
+          .select('username')
+          .eq('uuid', studentId)
+          .single();
+        
+        if (sectionData) {
+          // Store timestamp in UTC (default ISO format)
+          const timestamp = new Date().toISOString();
+          
+          await supabase
+            .from('audit_log')
+            .insert([{
+              id: randomUUID(),
+              user_id: sectionData.teacher_id,
+              activity: 'STUDENT_REMOVED',
+              details: `Removed student ${studentData?.username || studentId} from section: ${sectionData.name}`,
+              timestamp
+            }]);
+        }
+      } catch (auditError) {
+        console.error('Error logging student removal:', auditError);
+        // Don't fail the request if audit logging fails
       }
 
       return res.status(200).json({ message: 'Student removed from section successfully' })

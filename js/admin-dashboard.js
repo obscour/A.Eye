@@ -62,9 +62,17 @@ function checkAdminAuth() {
   return false;
 }
 
-// Helper function to format user name as USERNAME
+// Helper function to format user name as last_name, first_name (email)
 function formatUserName(user) {
-  return user.username;
+  if (user.last_name && user.first_name) {
+    return `${user.last_name}, ${user.first_name} (${user.email || user.username})`;
+  } else if (user.first_name) {
+    return `${user.first_name} (${user.email || user.username})`;
+  } else if (user.last_name) {
+    return `${user.last_name} (${user.email || user.username})`;
+  } else {
+    return user.email || user.username || 'Unknown';
+  }
 }
 
 // Function to display admin name
@@ -111,14 +119,13 @@ function populateUserSelect() {
   users.forEach(user => {
     const option = document.createElement('option');
     option.value = user.uuid;
-    // Format name as USERNAME - Email
+    // Format name as last_name, first_name (email)
     const formattedName = formatUserName(user);
-    const email = user.email || '';
-    option.textContent = `${formattedName} - ${email}`;
+    option.textContent = formattedName;
     // Include creation date in tooltip
     option.title = user.created_at 
       ? `Account created: ${new Date(user.created_at).toLocaleString()}` 
-      : `Email: ${email}`;
+      : formattedName;
     select.appendChild(option);
     console.log('Added user option:', formattedName);
   });
@@ -142,7 +149,7 @@ async function loadUserData() {
   currentUser = users.find(u => u.uuid === userId);
   if (!currentUser) return;
 
-  // Format name as USERNAME
+  // Format name as last_name, first_name (email)
   const formattedName = formatUserName(currentUser);
   document.getElementById('selectedUserName').textContent = formattedName;
   
@@ -437,12 +444,13 @@ async function saveCredentials() {
   }
 
   try {
-    const response = await fetch('/api/update-user-credentials', {
+    const response = await fetch('/api/mis-account-management', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        action: 'update',
         userId: currentUser.uuid,
-        ...updateData
+        accountData: updateData
       })
     });
 

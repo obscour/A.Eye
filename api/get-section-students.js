@@ -1,4 +1,4 @@
-import supabase from './_supabaseClient.js'
+import supabase from '../lib/_supabaseClient.js'
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -20,7 +20,9 @@ export default async function handler(req, res) {
         users:student_id (
           uuid,
           username,
-          email
+          email,
+          first_name,
+          last_name
         )
       `)
       .eq('section_id', sectionId)
@@ -35,6 +37,8 @@ export default async function handler(req, res) {
       uuid: item.users?.uuid,
       username: item.users?.username,
       email: item.users?.email,
+      first_name: item.users?.first_name,
+      last_name: item.users?.last_name,
       joined_at: item.joined_at
     })).filter(s => s.uuid) // Filter out any null entries
 

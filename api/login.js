@@ -1,5 +1,5 @@
-import supabase from './_supabaseClient.js'
-import { comparePassword, hashPassword } from './_passwordUtils.js'
+import supabase from '../lib/_supabaseClient.js'
+import { comparePassword, hashPassword } from '../lib/_passwordUtils.js'
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -28,7 +28,7 @@ export default async function handler(req, res) {
     
     const { data, error } = await supabase
       .from('users')
-      .select('uuid, email, username, password, role, email_verified')
+      .select('uuid, email, username, password, role, first_name, last_name')
       .eq(column, identifier)
       .single()
 

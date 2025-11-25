@@ -29,80 +29,8 @@
         <label for="password">Password</label>
       </div>
       <button type="submit" class="btn btn-primary w-100">Login</button>
-      <div class="mt-2">
-        <a href="#" class="text-decoration-none" onclick="showForgotPassword()">Forgot Password?</a>
-      </div>
-      <div class="mt-3">
-        Don't have an account? <a href="#" class="text-decoration-none" onclick="toggleForms()">Get Started</a>
-      </div>
     </form>
 
-    <!-- Forgot Password Form -->
-    <form id="forgotPasswordForm" style="display: none;">
-      <div class="mb-3">
-        <h5>Reset Password</h5>
-        <p class="text-muted small">Enter your email or username. We'll send you a password reset link.</p>
-      </div>
-      <div class="form-floating mb-4">
-        <input type="text" class="form-control" id="forgotIdentifier" placeholder="Email or Username" required />
-        <label for="forgotIdentifier">Email or Username</label>
-      </div>
-      <button type="submit" class="btn btn-primary w-100">Send Reset Link</button>
-      <div class="mt-3">
-        <a href="#" class="text-decoration-none" onclick="hideForgotPassword()">Back to Login</a>
-      </div>
-    </form>
-
-    <!-- Registration Form -->
-    <form id="registerForm" style="display: none;">
-      <div class="form-floating mb-3">
-        <input type="text" class="form-control" id="registerUsername" placeholder="Username" required />
-        <label for="registerUsername">Username</label>
-      </div>
-      <div class="form-floating mb-3">
-        <input type="email" class="form-control" id="registerEmail" placeholder="Email" required />
-        <label for="registerEmail">Email</label>
-      </div>
-      <div class="form-floating mb-3">
-        <input type="password" class="form-control" id="registerPassword" placeholder="Password" required />
-        <label for="registerPassword">Password</label>
-      </div>
-      <div class="form-floating mb-3">
-        <input type="password" class="form-control" id="confirmPassword" placeholder="Confirm Password" required />
-        <label for="confirmPassword">Confirm Password</label>
-      </div>
-      <div class="mb-3">
-        <div class="form-check">
-          <input class="form-check-input" type="checkbox" id="agreeToTerms" required />
-          <label class="form-check-label" for="agreeToTerms">
-            I have read and agree to the <a href="#" onclick="showTermsModal(); return false;" class="text-decoration-none">Terms & Conditions</a> and the <a href="#" onclick="showPrivacyModal(); return false;" class="text-decoration-none">Privacy Policy</a>.
-          </label>
-        </div>
-      </div>
-      <button type="submit" class="btn btn-primary w-100" id="registerBtn" disabled>Register</button>
-      <div class="mt-3">
-        Already have an account? <a href="#" class="text-decoration-none" onclick="toggleForms()">Login</a>
-      </div>
-    </form>
-
-    <!-- Email Verification Message (shown after registration) -->
-    <div id="verificationMessage" style="display: none;">
-      <div class="alert alert-info">
-        <h5 class="mb-3">Registration Successful!</h5>
-        <p>We've sent a confirmation link to your email, please verify before proceeding.</p>
-        <p class="text-muted small mb-0">Check your inbox and click the verification link to activate your account.</p>
-      </div>
-      <div class="mt-3">
-        <p class="text-muted small mb-2">Didn't receive the email?</p>
-        <button type="button" class="btn btn-outline-primary btn-sm" id="resendEmailBtn" onclick="resendVerificationEmail()">
-          Resend Verification Email
-        </button>
-        <div id="resendEmailStatus" class="mt-2" style="display: none;"></div>
-      </div>
-      <div class="mt-3">
-        <a href="#" class="text-decoration-none" onclick="toggleForms()">Back to Login</a>
-      </div>
-    </div>
   </div>
 
   <!-- Terms & Conditions Modal -->

@@ -362,45 +362,97 @@ body {
   /* Make cards full height */
   .teacher-dashboard-container {
     min-height: calc(100vh - 76px);
-    display: flex;
-    flex-direction: column;
   }
   
-  .teacher-dashboard-container .row {
-    flex: 1;
-    min-height: 0;
+  /* Top row - sections and students side by side */
+  .teacher-dashboard-container .row.mb-4 {
+    margin-bottom: 1.5rem !important;
   }
   
-  .teacher-dashboard-container .col-lg-6 {
+  .teacher-dashboard-container .row.mb-4 .col-lg-6 {
     display: flex;
     flex-direction: column;
+    height: auto;
   }
   
-  .teacher-dashboard-container .card {
+  .teacher-dashboard-container .row.mb-4 .card {
     display: flex;
     flex-direction: column;
-    flex: 1;
-    min-height: 0;
-  }
-  
-  .teacher-dashboard-container .card-body {
-    flex: 1;
-    overflow-y: auto;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
+    height: 100%;
+    max-height: 500px; /* Limit height to prevent excessive space */
   }
   
   /* Fix table container to use available space */
-  .teacher-dashboard-container .table-responsive {
-    flex: 1;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
+  .teacher-dashboard-container .row.mb-4 .table-responsive {
+    overflow-y: auto;
+    overflow-x: auto;
+    position: relative;
   }
   
   .teacher-dashboard-container .table-responsive table {
     margin-bottom: 0;
+    width: 100%;
+    table-layout: auto;
+  }
+  
+  /* Ensure sections table displays correctly */
+  .teacher-dashboard-container #sectionsList {
+    display: table-row-group;
+  }
+  
+  .teacher-dashboard-container #sectionsList tr {
+    display: table-row;
+  }
+  
+  .teacher-dashboard-container #sectionsList td {
+    display: table-cell;
+  }
+  
+  /* Bottom row - performance section */
+  .teacher-dashboard-container .row:not(.mb-4) {
+    margin-top: 0;
+  }
+  
+  .teacher-dashboard-container .row:not(.mb-4) .col-12 {
+    margin-top: 0;
+  }
+  
+  /* Hide empty progress section when not needed to remove blank space */
+  .teacher-dashboard-container #studentProgressEmpty {
+    min-height: 200px !important;
+    height: auto;
+    padding: 2rem;
+    margin-bottom: 0;
+  }
+  
+  .teacher-dashboard-container #studentProgressEmpty[style*="display: none"] {
+    display: none !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: hidden;
+  }
+  
+  /* Ensure sections table header stays visible */
+  .teacher-dashboard-container .table-responsive .table-light.sticky-top {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background-color: #f8f9fa !important;
+  }
+  
+  /* Fix table display issues */
+  .teacher-dashboard-container .table-responsive {
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .teacher-dashboard-container .table-responsive table thead {
+    display: table-header-group;
+  }
+  
+  .teacher-dashboard-container .table-responsive table tbody {
+    display: table-row-group;
   }
 
   .card-header {
@@ -409,21 +461,21 @@ body {
   }
 
   /* Teacher Dashboard Sections Table */
-  #sectionsList tr {
+  .teacher-dashboard-container #sectionsList tr {
     cursor: pointer;
     transition: all 0.2s ease;
   }
 
-  #sectionsList tr:hover {
+  .teacher-dashboard-container #sectionsList tr:hover {
     background-color: #f0f7ff;
     transform: translateX(2px);
   }
 
-  #sectionsList tr:hover td:first-child {
+  .teacher-dashboard-container #sectionsList tr:hover td:first-child {
     background-color: #f0f7ff;
   }
 
-  #sectionsList code {
+  .teacher-dashboard-container #sectionsList code {
     font-size: 0.85rem;
     padding: 0.35rem 0.65rem;
     background: linear-gradient(135deg, #e3f2fd, #bbdefb);
@@ -479,6 +531,82 @@ body {
     border-color: #90caf9;
   }
 
+  /* Fix dropdown menu being cut off in teacher dashboard */
+  .teacher-dashboard-container .table-responsive {
+    position: relative;
+  }
+  
+  /* Ensure dropdown menu appears above everything */
+  .teacher-dashboard-container .dropdown-menu {
+    z-index: 1050 !important;
+  }
+  
+  /* Make sure the actions column doesn't clip dropdowns */
+  .teacher-dashboard-container table tbody tr td:last-child {
+    position: relative;
+  }
+  
+  /* For the sections table, allow dropdown to overflow */
+  .teacher-dashboard-container .card-body .table-responsive {
+    overflow-x: auto;
+    overflow-y: auto;
+  }
+  
+  /* Ensure dropdown container in table doesn't get clipped */
+  .teacher-dashboard-container table .dropdown {
+    position: static;
+  }
+  
+  .teacher-dashboard-container table .dropdown .dropdown-menu {
+    position: absolute;
+    right: 0;
+    left: auto;
+    transform: none;
+  }
+  
+  /* Teacher dashboard progress section layout */
+  .teacher-dashboard-container #studentProgressSection,
+  .teacher-dashboard-container #studentProgressEmpty {
+    min-height: 400px;
+  }
+  
+  .teacher-dashboard-container #studentProgressSection .card-body {
+    padding: 1.5rem;
+  }
+  
+  /* Ensure performance chart container has proper sizing */
+  .teacher-dashboard-container #performanceChart {
+    max-height: 400px !important;
+    height: 400px !important;
+  }
+  
+  /* Students table scroll - limit to 4 rows visible */
+  .teacher-dashboard-container #sectionStudentsTable {
+    margin-bottom: 0;
+  }
+  
+  .teacher-dashboard-container .table-responsive[style*="max-height"] {
+    max-height: 200px !important; /* Approximately 4 rows */
+    overflow-y: auto !important;
+  }
+  
+  /* Ensure empty state and progress section don't overlap */
+  .teacher-dashboard-container #studentProgressEmpty {
+    display: flex !important;
+  }
+  
+  .teacher-dashboard-container #studentProgressSection {
+    display: none !important;
+  }
+  
+  .teacher-dashboard-container #studentProgressSection[style*="display: block"] {
+    display: block !important;
+  }
+  
+  .teacher-dashboard-container #studentProgressEmpty[style*="display: none"] {
+    display: none !important;
+  }
+  
   /* Dropdown menu improvements */
   .dropdown-menu {
     border-radius: 8px;
@@ -620,6 +748,92 @@ body {
     .col-lg-6 {
       margin-bottom: 1.5rem;
     }
+  }
+
+  /* Letter Toggle Buttons */
+  #letterToggleGroup {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    max-width: 100%;
+    overflow-x: auto;
+    padding: 0.25rem;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  #letterToggleGroup button {
+    min-width: 2rem;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    white-space: nowrap;
+  }
+
+  @media (max-width: 767.98px) {
+    #letterToggleGroup {
+      max-height: 120px;
+      overflow-y: auto;
+    }
+  }
+
+  /* MIS Dashboard Tab Styling */
+  #misTabs .nav-link {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    color: #495057;
+  }
+
+  #misTabs .nav-link:hover {
+    background-color: #e9ecef;
+    border-color: #adb5bd;
+  }
+
+  #misTabs .nav-link.active {
+    background-color: #ffffff;
+    border-bottom-color: #ffffff;
+    color: #007bff;
+    font-weight: 600;
+  }
+
+  /* Password toggle button styling */
+  #togglePassword {
+    cursor: pointer;
+    color: #6c757d;
+    transition: color 0.2s;
+  }
+
+  #togglePassword:hover {
+    color: #495057;
+  }
+
+  #togglePassword:focus {
+    outline: none;
+    box-shadow: none;
+  }
+
+  .form-floating:has(#createPassword) {
+    position: relative;
+  }
+
+  /* Ensure readonly fields are visually distinct and uneditable */
+  #createUsername[readonly],
+  #createEmail[readonly],
+  #createPassword[readonly] {
+    background-color: #e9ecef !important;
+    cursor: not-allowed !important;
+  }
+
+  #createUsername[readonly]:focus,
+  #createEmail[readonly]:focus,
+  #createPassword[readonly]:focus {
+    border-color: #ced4da !important;
+    box-shadow: none !important;
+    outline: none !important;
+  }
+
+  /* Password toggle button should still be clickable */
+  #togglePassword {
+    pointer-events: auto !important;
+    cursor: pointer !important;
   }
 
   @media (max-width: 767.98px) {

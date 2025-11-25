@@ -2,8 +2,14 @@ let sections = [];
 let filteredSections = [];
 let currentSection = null;
 let sectionStudents = [];
+let sortedSectionStudents = []; // Store sorted students list
 let currentStudent = null;
 let currentSort = { column: null, asc: true };
+let studentSortOrder = 'name-asc'; // Default sort order for students
+let performanceChart = null;
+let letterVisibility = {}; // Track which letters are visible
+let studentStatsData = []; // Store stats data for sorting
+let performanceHistory = []; // Store performance history data
 
 // Function to handle logout
 async function logout() {
@@ -59,7 +65,25 @@ function checkTeacherAuth() {
 function displayTeacherName() {
   const teacher = checkTeacherAuth();
   if (teacher) {
-    document.getElementById('teacherName').textContent = `Welcome, ${teacher.username}`;
+    // Format name as lastname, firstname (username) - no comma before parentheses
+    let formattedName = '';
+    if (teacher.last_name && teacher.first_name) {
+      formattedName = `${teacher.last_name}, ${teacher.first_name} (${teacher.username || teacher.email})`;
+    } else if (teacher.first_name) {
+      formattedName = `${teacher.first_name} (${teacher.username || teacher.email})`;
+    } else if (teacher.last_name) {
+      formattedName = `${teacher.last_name} (${teacher.username || teacher.email})`;
+    } else {
+      formattedName = teacher.username || teacher.email || 'Unknown';
+    }
+    
+    const welcomeText = `Welcome! <strong>${formattedName}</strong>`;
+    const teacherNameEl = document.getElementById('teacherName');
+    if (teacherNameEl) {
+      teacherNameEl.innerHTML = welcomeText;
+      // Make text white like MIS dashboard
+      teacherNameEl.style.color = 'white';
+    }
   }
 }
 
@@ -131,18 +155,18 @@ function renderSections() {
       </td>
       <td class="text-end" onclick="event.stopPropagation()">
         <div class="dropdown">
-          <button class="btn btn-sm btn-outline-secondary" type="button" id="sectionMenu${section.id}" data-bs-toggle="dropdown" aria-expanded="false" style="border: none; padding: 0.25rem 0.5rem;">
+          <button class="btn btn-sm btn-outline-secondary" type="button" id="sectionMenu${section.id}" data-bs-toggle="dropdown" aria-expanded="false" style="border: none; padding: 0.25rem 0.5rem;" data-section-id="${section.id}">
             <span style="font-size: 1.2rem;">☰</span>
           </button>
           <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="sectionMenu${section.id}">
             <li>
-              <a class="dropdown-item" href="#" onclick="event.preventDefault(); togglePinSection('${section.id}', ${!isPinned}); return false;">
+              <a class="dropdown-item pin-section-item" href="#" data-section-id="${section.id}" data-pin-status="${!isPinned}">
                 ${isPinned ? 'Unpin Section' : 'Pin Section'}
               </a>
             </li>
             <li><hr class="dropdown-divider"></li>
             <li>
-              <a class="dropdown-item text-danger" href="#" onclick="event.preventDefault(); deleteSection('${section.id}', '${section.name.replace(/'/g, "\\'")}'); return false;">
+              <a class="dropdown-item text-danger delete-section-item" href="#" data-section-id="${section.id}" data-section-name="${section.name.replace(/'/g, "&#39;")}">
                 Delete Section
               </a>
             </li>
@@ -319,7 +343,17 @@ async function openSection(sectionId) {
     nameEl.textContent = currentSection.name;
   }
   if (codeEl) {
-    codeEl.innerHTML = `Section Code: <code class="text-primary">${currentSection.code}</code>`;
+    codeEl.innerHTML = `Code: <code class="text-primary">${currentSection.code}</code>`;
+  }
+  
+  // Hide student progress when opening a new section
+  const studentProgressSection = document.getElementById('studentProgressSection');
+  const studentProgressEmpty = document.getElementById('studentProgressEmpty');
+  if (studentProgressSection) {
+    studentProgressSection.style.display = 'none';
+  }
+  if (studentProgressEmpty) {
+    studentProgressEmpty.style.display = 'block';
   }
   
   // Hide empty state and show section content
@@ -353,8 +387,12 @@ function closeSection() {
   }
   
   const studentProgressSection = document.getElementById('studentProgressSection');
+  const studentProgressEmpty = document.getElementById('studentProgressEmpty');
   if (studentProgressSection) {
-    studentProgressSection.style.display = 'none';
+    studentProgressSection.setAttribute('style', 'display: none !important;');
+  }
+  if (studentProgressEmpty) {
+    studentProgressEmpty.setAttribute('style', 'display: flex !important; min-height: 300px;');
   }
 }
 
@@ -376,7 +414,9 @@ async function loadSectionStudents() {
     const result = await response.json();
     sectionStudents = result.students || [];
     
-    renderSectionStudents();
+    // Reset sorted list and apply current sort
+    sortedSectionStudents = [];
+    sortStudents(); // This will sort and render
   } catch (error) {
     console.error('Error loading section students:', error);
     document.getElementById('sectionStudentsBody').innerHTML = 
@@ -384,26 +424,68 @@ async function loadSectionStudents() {
   }
 }
 
+// Helper function to format student name as last_name, first_name (email)
+function formatStudentName(student) {
+  if (student.last_name && student.first_name) {
+    return `${student.last_name}, ${student.first_name} (${student.email})`;
+  } else if (student.first_name) {
+    return `${student.first_name} (${student.email})`;
+  } else if (student.last_name) {
+    return `${student.last_name} (${student.email})`;
+  } else {
+    return student.email || student.username || 'Unknown';
+  }
+}
+
+// Function to sort students
+function sortStudents() {
+  const sortValue = document.getElementById('studentSort').value;
+  studentSortOrder = sortValue;
+  
+  if (sectionStudents.length === 0) {
+    sortedSectionStudents = [];
+    renderSectionStudents();
+    return;
+  }
+  
+  sortedSectionStudents = [...sectionStudents].sort((a, b) => {
+    // Get formatted names for comparison
+    const nameA = formatStudentName(a).toLowerCase();
+    const nameB = formatStudentName(b).toLowerCase();
+    
+    if (sortValue === 'name-asc') {
+      return nameA.localeCompare(nameB);
+    } else if (sortValue === 'name-desc') {
+      return nameB.localeCompare(nameA);
+    }
+    return 0;
+  });
+  
+  renderSectionStudents();
+}
+
 // Function to render students in section
 function renderSectionStudents() {
   const tbody = document.getElementById('sectionStudentsBody');
   tbody.innerHTML = '';
 
-  if (sectionStudents.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No students in this section yet. Invite students to get started!</td></tr>';
+  // Use sorted list if available, otherwise use original list
+  const studentsToRender = sortedSectionStudents.length > 0 ? sortedSectionStudents : sectionStudents;
+
+  if (studentsToRender.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="2" class="text-center text-muted small">No students in this section yet. Invite students to get started!</td></tr>';
     return;
   }
 
-  sectionStudents.forEach(student => {
+  studentsToRender.forEach(student => {
     const row = document.createElement('tr');
+    const studentName = formatStudentName(student);
     row.innerHTML = `
-      <td>${student.username}</td>
-      <td>${student.email}</td>
-      <td>${student.joined_at ? new Date(student.joined_at).toLocaleDateString() : 'N/A'}</td>
+      <td class="small">${studentName}</td>
       <td class="text-end">
-        <div class="d-flex gap-2 justify-content-end">
-          <button class="btn btn-sm btn-primary" onclick="viewStudentProgress('${student.uuid}')">View Progress</button>
-          <button class="btn btn-sm btn-outline-danger" onclick="removeStudentFromSection('${student.uuid}')">Remove</button>
+        <div class="d-flex gap-1 justify-content-end">
+          <button class="btn btn-sm btn-primary" onclick="viewStudentProgress('${student.uuid}')" style="font-size: 0.75rem; padding: 0.2rem 0.4rem;">View</button>
+          <button class="btn btn-sm btn-outline-danger" onclick="removeStudentFromSection('${student.uuid}')" style="font-size: 0.75rem; padding: 0.2rem 0.4rem;">Remove</button>
         </div>
       </td>
     `;
@@ -414,11 +496,60 @@ function renderSectionStudents() {
 // Function to view student progress
 async function viewStudentProgress(studentId) {
   currentStudent = sectionStudents.find(s => s.uuid === studentId);
-  if (!currentStudent) return;
+  if (!currentStudent) {
+    console.error('Student not found in section:', studentId);
+    return;
+  }
 
-  document.getElementById('selectedStudentName').textContent = currentStudent.username;
-  document.getElementById('studentProgressSection').style.display = 'block';
-  document.getElementById('studentProgressSection').scrollIntoView({ behavior: 'smooth' });
+  // Verify student is in current section before proceeding
+  if (!currentSection) {
+    console.error('No section selected');
+    return;
+  }
+
+  const studentProgressSection = document.getElementById('studentProgressSection');
+  const studentProgressEmpty = document.getElementById('studentProgressEmpty');
+  
+  // Hide empty state and show progress section FIRST - use !important via inline style
+  if (studentProgressEmpty) {
+    studentProgressEmpty.setAttribute('style', 'display: none !important; min-height: 300px;');
+  }
+  if (studentProgressSection) {
+    studentProgressSection.setAttribute('style', 'display: block !important;');
+  }
+  
+  // Update student name after showing the section
+  const selectedStudentNameEl = document.getElementById('selectedStudentName');
+  if (selectedStudentNameEl) {
+    selectedStudentNameEl.textContent = formatStudentName(currentStudent);
+  }
+  
+  // Log audit activity - only if student is in teacher's section
+  if (window.auditLog && currentSection && isStudentInTeacherSection(studentId)) {
+    const teacher = checkTeacherAuth();
+    if (teacher) {
+      await window.auditLog.logActivity(
+        'VIEWED_STUDENT_PROGRESS',
+        `Viewed progress for student: ${formatStudentName(currentStudent)} in section "${currentSection.name}" (Code: ${currentSection.code})`,
+        teacher.id
+      );
+    }
+  }
+
+  // Reset sort state when viewing a new student
+  currentSort = { column: null, asc: true };
+
+  // Reset letter visibility when viewing a new student
+  for (let char of 'ABCDEFGHIJKLMNOPQRSTUVWXYZ') {
+    letterVisibility[char] = false;
+  }
+  
+  // Clear any existing chart data
+  if (performanceChart) {
+    performanceChart.data.labels = [];
+    performanceChart.data.datasets = [];
+    performanceChart.update();
+  }
 
   try {
     const response = await fetch('/api/get-user-stats', {
@@ -442,20 +573,269 @@ async function viewStudentProgress(studentId) {
       
       statsArray = Object.entries(statsJson).map(([char, data]) => ({
         alphanumeric_char: char,
-        attempts: data.attempts || 0,
-        mastery_score: data.mastery || 0,
-        correct_count: data.correct || 0,
+        attempts: Math.round((data.attempts || 0) * 100) / 100, // Round to 2 decimals for display
+        mastery_score: Math.round((data.mastery || 0) * 100) / 100,
+        correct_count: Math.round((data.correct || 0) * 100) / 100,
         avg_response_time: 0,
-        streak: data.streak || 0
+        streak: Math.round((data.streak || 0) * 100) / 100
       }));
     }
 
-    renderStudentStatsTable(statsArray);
+    studentStatsData = statsArray;
+    renderStudentStatsTable(studentStatsData);
+    updateSortIndicators();
+    
+    // Initialize chart if not already done (after DOM is updated)
+    if (!performanceChart) {
+      // Wait a bit for the section to be fully visible
+      setTimeout(() => {
+        initializePerformanceChart();
+        // After chart is initialized, load history
+        loadPerformanceHistory(studentId).then(() => {
+          updatePerformanceChart();
+        });
+      }, 200);
+    } else {
+      // Chart already exists, just load history and update
+      await loadPerformanceHistory(studentId);
+      updatePerformanceChart();
+    }
   } catch (error) {
     console.error('Error loading student stats:', error);
     document.getElementById('studentStatsBody').innerHTML = 
       '<tr><td colspan="6" class="text-danger text-center">Error loading stats: ' + error.message + '</td></tr>';
   }
+}
+
+// Initialize performance chart (blank on load)
+function initializePerformanceChart() {
+  const ctx = document.getElementById('performanceChart');
+  if (!ctx) {
+    console.warn('Performance chart canvas not found');
+    return;
+  }
+
+  // Initialize all letters as hidden
+  for (let char of 'ABCDEFGHIJKLMNOPQRSTUVWXYZ') {
+    letterVisibility[char] = false;
+  }
+
+  performanceChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: [],
+      datasets: []
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      scales: {
+        y: {
+          beginAtZero: true,
+          title: {
+            display: true,
+            text: 'Mastery Score'
+          }
+        },
+        x: {
+          title: {
+            display: true,
+            text: 'Date'
+          }
+        }
+      },
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top'
+        },
+        tooltip: {
+          mode: 'index',
+          intersect: false
+        }
+      }
+    }
+  });
+
+  // Create letter toggle buttons
+  createLetterToggles();
+}
+
+// Load performance history data for current student
+async function loadPerformanceHistory(studentId) {
+  try {
+    if (!studentId) return;
+    
+    const response = await fetch('/api/get-performance-history', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: studentId })
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to load history: ${response.status}`);
+    }
+    
+    const result = await response.json();
+    performanceHistory = result.history || [];
+    
+    // Update chart with current selections
+    updatePerformanceChart();
+  } catch (error) {
+    console.error('Error loading performance history:', error);
+    performanceHistory = [];
+  }
+}
+
+// Create toggle buttons for each letter
+function createLetterToggles() {
+  const toggleGroup = document.getElementById('letterToggleGroup');
+  if (!toggleGroup) return;
+
+  toggleGroup.innerHTML = '';
+  
+  // Create a button for each letter
+  for (let char of 'ABCDEFGHIJKLMNOPQRSTUVWXYZ') {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn btn-sm btn-outline-secondary';
+    btn.textContent = char;
+    btn.dataset.letter = char;
+    btn.onclick = () => toggleLetter(char);
+    toggleGroup.appendChild(btn);
+  }
+}
+
+// Toggle letter visibility
+function toggleLetter(letter) {
+  letterVisibility[letter] = !letterVisibility[letter];
+  
+  // Update button style
+  const btn = document.querySelector(`[data-letter="${letter}"]`);
+  if (btn) {
+    if (letterVisibility[letter]) {
+      btn.classList.remove('btn-outline-secondary');
+      btn.classList.add('btn-primary');
+    } else {
+      btn.classList.remove('btn-primary');
+      btn.classList.add('btn-outline-secondary');
+    }
+  }
+
+  // Update chart
+  updatePerformanceChart();
+}
+
+// Select all letters
+function selectAllLetters() {
+  for (let char of 'ABCDEFGHIJKLMNOPQRSTUVWXYZ') {
+    letterVisibility[char] = true;
+    const btn = document.querySelector(`[data-letter="${char}"]`);
+    if (btn) {
+      btn.classList.remove('btn-outline-secondary');
+      btn.classList.add('btn-primary');
+    }
+  }
+  updatePerformanceChart();
+}
+
+// Unselect all letters
+function unselectAllLetters() {
+  for (let char of 'ABCDEFGHIJKLMNOPQRSTUVWXYZ') {
+    letterVisibility[char] = false;
+    const btn = document.querySelector(`[data-letter="${char}"]`);
+    if (btn) {
+      btn.classList.remove('btn-primary');
+      btn.classList.add('btn-outline-secondary');
+    }
+  }
+  updatePerformanceChart();
+}
+
+// Update performance chart with historical data
+function updatePerformanceChart(stats) {
+  if (!performanceChart) return;
+
+  // Get visible letters
+  const visibleLetters = [];
+  for (let char of 'ABCDEFGHIJKLMNOPQRSTUVWXYZ') {
+    if (letterVisibility[char]) {
+      visibleLetters.push(char);
+    }
+  }
+  
+  if (visibleLetters.length === 0 || performanceHistory.length === 0) {
+    // No letters visible or no history, show empty chart
+    performanceChart.data.labels = [];
+    performanceChart.data.datasets = [];
+    performanceChart.update();
+    return;
+  }
+
+  // Sort history by date (oldest first)
+  const sortedHistory = [...performanceHistory].sort((a, b) => 
+    new Date(a.recorded_at) - new Date(b.recorded_at)
+  );
+
+  // Get all unique dates
+  const dates = sortedHistory.map(h => h.recorded_at);
+  const uniqueDates = [...new Set(dates)].sort((a, b) => new Date(a) - new Date(b));
+
+  // Generate colors for each letter
+  const colors = [
+    'rgb(255, 99, 132)',   // Red
+    'rgb(54, 162, 235)',   // Blue
+    'rgb(75, 192, 192)',   // Teal
+    'rgb(255, 206, 86)',   // Yellow
+    'rgb(153, 102, 255)',  // Purple
+    'rgb(255, 159, 64)',   // Orange
+    'rgb(201, 203, 207)',  // Gray
+    'rgb(255, 99, 255)',   // Magenta
+    'rgb(99, 255, 132)',   // Green
+    'rgb(99, 132, 255)'    // Light Blue
+  ];
+
+  // Format dates for display in GMT+8 (frontend only - data stored in UTC)
+  const formattedDates = uniqueDates.map(date => {
+    const d = new Date(date);
+    // Convert to GMT+8 for display only
+    return d.toLocaleDateString('en-US', { 
+      timeZone: 'Asia/Manila',
+      month: 'short', 
+      day: 'numeric' 
+    });
+  });
+
+  // Create datasets for each visible letter
+  const datasets = visibleLetters.map((letter, index) => {
+    const color = colors[index % colors.length];
+    const data = uniqueDates.map(date => {
+      // Find the history record for this date
+      const historyRecord = sortedHistory.find(h => h.recorded_at === date);
+      if (!historyRecord || !historyRecord.stats) return 0;
+      
+      const letterStats = historyRecord.stats[letter];
+      if (!letterStats) return 0;
+      
+      return letterStats.mastery || 0;
+    });
+
+    return {
+      label: `Letter ${letter}`,
+      data: data,
+      borderColor: color,
+      backgroundColor: color.replace('rgb', 'rgba').replace(')', ', 0.2)'),
+      tension: 0.4,
+      fill: false,
+      pointRadius: 4,
+      pointHoverRadius: 6
+    };
+  });
+
+  // Update chart
+  performanceChart.data.labels = formattedDates;
+  performanceChart.data.datasets = datasets;
+  performanceChart.update();
 }
 
 // Function to render student stats table
@@ -479,6 +859,40 @@ function renderStudentStatsTable(stats) {
   }
 }
 
+// Function to sort and render student stats
+function sortStudentStats(column) {
+  if (currentSort.column === column) {
+    currentSort.asc = !currentSort.asc;
+  } else {
+    currentSort.column = column;
+    currentSort.asc = true;
+  }
+  
+  studentStatsData.sort((a, b) => {
+    if (a[column] == null) return 1;
+    if (b[column] == null) return -1;
+    if (typeof a[column] === 'number' && typeof b[column] === 'number') {
+      return currentSort.asc ? a[column] - b[column] : b[column] - a[column];
+    }
+    return currentSort.asc
+      ? String(a[column]).localeCompare(String(b[column]))
+      : String(b[column]).localeCompare(String(a[column]));
+  });
+  
+  renderStudentStatsTable(studentStatsData);
+  updateSortIndicators();
+}
+
+// Update sort indicators for student stats table
+function updateSortIndicators() {
+  document.querySelectorAll('#studentStatsTable th.sortable').forEach(th => {
+    th.classList.remove('sorted-asc', 'sorted-desc');
+    if (th.dataset.column === currentSort.column) {
+      th.classList.add(currentSort.asc ? 'sorted-asc' : 'sorted-desc');
+    }
+  });
+}
+
 // Function to show create section modal
 function showCreateSectionModal() {
   document.getElementById('sectionName').value = '';
@@ -499,10 +913,11 @@ async function createSection() {
     const teacher = checkTeacherAuth();
     if (!teacher) return;
 
-    const response = await fetch('/api/create-section', {
+    const response = await fetch('/api/section-actions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
+        action: 'create',
         teacherId: teacher.id,
         name: sectionName
       })
@@ -540,6 +955,12 @@ function showInviteStudentModal() {
   document.getElementById('studentIdentifier').value = '';
   const modal = new bootstrap.Modal(document.getElementById('inviteStudentModal'));
   modal.show();
+}
+
+// Helper function to verify student is in teacher's section before logging
+function isStudentInTeacherSection(studentId) {
+  if (!currentSection) return false;
+  return sectionStudents.some(s => s.uuid === studentId);
 }
 
 // Function to invite student to section
@@ -584,9 +1005,26 @@ async function inviteStudent() {
     await loadSectionStudents();
     await loadSections(); // Refresh section count
 
-    // Log activity
-    if (window.auditLog) {
-      await window.auditLog.logActivity('student_invited', `Invited ${identifier} to section ${currentSection.name}`, teacher.id);
+    // Log activity - only if student was successfully added to section
+    if (window.auditLog && currentSection) {
+      // Get the student info from the response or reloaded list
+      const addedStudent = sectionStudents.find(s => 
+        s.email === identifier || s.username === identifier
+      );
+      if (addedStudent) {
+        await window.auditLog.logActivity(
+          'STUDENT_ADDED',
+          `Added student: ${formatStudentName(addedStudent)} to section "${currentSection.name}" (Code: ${currentSection.code})`,
+          teacher.id
+        );
+      } else {
+        // Fallback if student info not immediately available
+        await window.auditLog.logActivity(
+          'STUDENT_ADDED',
+          `Added student: ${identifier} to section "${currentSection.name}" (Code: ${currentSection.code})`,
+          teacher.id
+        );
+      }
     }
   } catch (error) {
     console.error('Error inviting student:', error);
@@ -622,14 +1060,21 @@ async function removeStudentFromSection(studentId) {
       throw new Error(result.error || 'Failed to remove student');
     }
 
+    // Get student info before removing (for audit log)
+    const removedStudent = sectionStudents.find(s => s.uuid === studentId);
+    const studentName = removedStudent ? formatStudentName(removedStudent) : 'Unknown Student';
+
     // Reload section students
     await loadSectionStudents();
     await loadSections(); // Refresh section count
 
-    // Log activity
-    if (window.auditLog) {
-      const student = sectionStudents.find(s => s.uuid === studentId);
-      await window.auditLog.logActivity('student_removed', `Removed ${student?.username || studentId} from section ${currentSection.name}`, teacher.id);
+    // Log activity - only if student was in the section
+    if (window.auditLog && currentSection && removedStudent) {
+      await window.auditLog.logActivity(
+        'STUDENT_REMOVED',
+        `Removed student: ${studentName} from section "${currentSection.name}" (Code: ${currentSection.code})`,
+        teacher.id
+      );
     }
   } catch (error) {
     console.error('Error removing student:', error);
@@ -648,8 +1093,11 @@ window.inviteStudent = inviteStudent;
 window.removeStudentFromSection = removeStudentFromSection;
 window.filterSections = filterSections;
 window.sortSections = sortSections;
+window.sortStudents = sortStudents;
 window.deleteSection = deleteSection;
 window.togglePinSection = togglePinSection;
+window.selectAllLetters = selectAllLetters;
+window.unselectAllLetters = unselectAllLetters;
 
 // Initialize page
 document.addEventListener('DOMContentLoaded', function() {
@@ -670,7 +1118,58 @@ document.addEventListener('DOMContentLoaded', function() {
     sectionContentEmpty.style.display = 'flex';
   }
   
+  // Hide student progress on page load
+  const studentProgressSection = document.getElementById('studentProgressSection');
+  const studentProgressEmpty = document.getElementById('studentProgressEmpty');
+  if (studentProgressSection) {
+    studentProgressSection.setAttribute('style', 'display: none !important;');
+  }
+  if (studentProgressEmpty) {
+    studentProgressEmpty.setAttribute('style', 'display: flex !important; min-height: 300px;');
+  }
+  
+  // Initialize student sort dropdown
+  const studentSortSelect = document.getElementById('studentSort');
+  if (studentSortSelect) {
+    studentSortSelect.value = studentSortOrder;
+  }
+  
   loadSections();
+
+  // Attach sorting event listeners for student stats table
+  // Use event delegation since table is dynamically shown/hidden
+  document.addEventListener('click', function(e) {
+    const sortableHeader = e.target.closest('#studentStatsTable th.sortable');
+    if (sortableHeader) {
+      e.preventDefault();
+      sortStudentStats(sortableHeader.dataset.column);
+    }
+  });
+
+  // Event delegation for section dropdown menu items
+  document.addEventListener('click', function(e) {
+    // Handle pin/unpin section
+    const pinItem = e.target.closest('.pin-section-item');
+    if (pinItem) {
+      e.preventDefault();
+      e.stopPropagation();
+      const sectionId = pinItem.dataset.sectionId;
+      const pinStatus = pinItem.dataset.pinStatus === 'true';
+      togglePinSection(sectionId, pinStatus);
+      return false;
+    }
+
+    // Handle delete section
+    const deleteItem = e.target.closest('.delete-section-item');
+    if (deleteItem) {
+      e.preventDefault();
+      e.stopPropagation();
+      const sectionId = deleteItem.dataset.sectionId;
+      const sectionName = deleteItem.dataset.sectionName;
+      deleteSection(sectionId, sectionName);
+      return false;
+    }
+  });
 
   // Log dashboard access
   if (window.auditLog) {

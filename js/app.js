@@ -1,13 +1,13 @@
-// Helper function to format user name as LASTNAME, FIRSTNAME (USERNAME)
+// Helper function to format user name as last_name, first_name (username)
 function formatUserName(user) {
   if (user.last_name && user.first_name) {
-    return `${user.last_name.toUpperCase()}, ${user.first_name} (${user.username})`;
+    return `${user.last_name}, ${user.first_name} (${user.username || user.email})`;
   } else if (user.first_name) {
-    return `${user.first_name} (${user.username})`;
+    return `${user.first_name} (${user.username || user.email})`;
   } else if (user.last_name) {
-    return `${user.last_name.toUpperCase()} (${user.username})`;
+    return `${user.last_name} (${user.username || user.email})`;
   } else {
-    return user.username;
+    return user.username || user.email || 'Unknown';
   }
 }
 
@@ -153,8 +153,18 @@ async function displayCurrentUser() {
     if (!userStr) throw new Error('No user logged in');
     
     const user = JSON.parse(userStr);
-    // Format name as LASTNAME, FIRSTNAME (USERNAME) if available, otherwise just username
-    const formattedName = formatUserName(user);
+    // Format name as lastname, firstname (username) - no comma before parentheses
+    let formattedName = '';
+    if (user.last_name && user.first_name) {
+      formattedName = `${user.last_name}, ${user.first_name} (${user.username || user.email})`;
+    } else if (user.first_name) {
+      formattedName = `${user.first_name} (${user.username || user.email})`;
+    } else if (user.last_name) {
+      formattedName = `${user.last_name} (${user.username || user.email})`;
+    } else {
+      formattedName = user.username || user.email || 'Unknown';
+    }
+    
     const welcomeText = `Welcome! <strong>${formattedName}</strong>`;
 
     // Desktop sidebar
@@ -211,6 +221,8 @@ window.logQuizActivity = logQuizActivity;
 
 let statsData = [];
 let currentSort = { column: null, asc: true };
+let performanceChart = null;
+let letterVisibility = {}; // Track which letters are visible
 
 // Function to render stats table
 function renderStatsTable(stats) {
@@ -297,17 +309,21 @@ async function displayUserStats() {
 
       statsArray = Object.entries(statsJson).map(([char, data]) => ({
         alphanumeric_char: char,
-        attempts: data.attempts || 0,
-        mastery_score: data.mastery || 0,
-        correct_count: data.correct || 0,
+        attempts: Math.round((data.attempts || 0) * 100) / 100, // Round to 2 decimals for display
+        mastery_score: Math.round((data.mastery || 0) * 100) / 100,
+        correct_count: Math.round((data.correct || 0) * 100) / 100,
         avg_response_time: 0,
-        streak: data.streak || 0
+        streak: Math.round((data.streak || 0) * 100) / 100
       }));
     }
 
     statsData = statsArray;
     renderStatsTable(statsData);
     updateSortIndicators();
+    
+    // Load performance history and update chart
+    await loadPerformanceHistory();
+    updatePerformanceChart(statsData);
   } catch (error) {
     const tbody = document.getElementById('userStatsBody');
     tbody.innerHTML = `<tr><td colspan="6" class="text-danger text-center">Error: ${error.message}</td></tr>`;
@@ -315,9 +331,250 @@ async function displayUserStats() {
   }
 }
 
+// Initialize performance chart (blank on load)
+let performanceHistory = []; // Store performance history data
+
+function initializePerformanceChart() {
+  const ctx = document.getElementById('performanceChart');
+  if (!ctx) return;
+
+  // Initialize all letters as hidden
+  for (let char of 'ABCDEFGHIJKLMNOPQRSTUVWXYZ') {
+    letterVisibility[char] = false;
+  }
+
+  performanceChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: [],
+      datasets: []
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      scales: {
+        y: {
+          beginAtZero: true,
+          title: {
+            display: true,
+            text: 'Mastery Score'
+          }
+        },
+        x: {
+          title: {
+            display: true,
+            text: 'Date'
+          }
+        }
+      },
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top'
+        },
+        tooltip: {
+          mode: 'index',
+          intersect: false
+        }
+      }
+    }
+  });
+
+  // Create letter toggle buttons
+  createLetterToggles();
+  
+  // Load performance history
+  loadPerformanceHistory();
+}
+
+// Load performance history data
+async function loadPerformanceHistory() {
+  try {
+    const userStr = localStorage.getItem('user');
+    if (!userStr) return;
+    
+    const user = JSON.parse(userStr);
+    
+    const response = await fetch('/api/get-performance-history', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: user.id })
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to load history: ${response.status}`);
+    }
+    
+    const result = await response.json();
+    performanceHistory = result.history || [];
+    
+    // Update chart with current selections
+    updatePerformanceChart(statsData);
+  } catch (error) {
+    console.error('Error loading performance history:', error);
+    performanceHistory = [];
+  }
+}
+
+// Create toggle buttons for each letter
+function createLetterToggles() {
+  const toggleGroup = document.getElementById('letterToggleGroup');
+  if (!toggleGroup) return;
+
+  toggleGroup.innerHTML = '';
+  
+  // Create a button for each letter
+  for (let char of 'ABCDEFGHIJKLMNOPQRSTUVWXYZ') {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn btn-sm btn-outline-secondary';
+    btn.textContent = char;
+    btn.dataset.letter = char;
+    btn.onclick = () => toggleLetter(char);
+    toggleGroup.appendChild(btn);
+  }
+}
+
+// Toggle letter visibility
+function toggleLetter(letter) {
+  letterVisibility[letter] = !letterVisibility[letter];
+  
+  // Update button style
+  const btn = document.querySelector(`[data-letter="${letter}"]`);
+  if (btn) {
+    if (letterVisibility[letter]) {
+      btn.classList.remove('btn-outline-secondary');
+      btn.classList.add('btn-primary');
+    } else {
+      btn.classList.remove('btn-primary');
+      btn.classList.add('btn-outline-secondary');
+    }
+  }
+
+  // Update chart
+  updatePerformanceChart(statsData);
+}
+
+// Select all letters
+function selectAllLetters() {
+  for (let char of 'ABCDEFGHIJKLMNOPQRSTUVWXYZ') {
+    letterVisibility[char] = true;
+    const btn = document.querySelector(`[data-letter="${char}"]`);
+    if (btn) {
+      btn.classList.remove('btn-outline-secondary');
+      btn.classList.add('btn-primary');
+    }
+  }
+  updatePerformanceChart(statsData);
+}
+
+// Unselect all letters
+function unselectAllLetters() {
+  for (let char of 'ABCDEFGHIJKLMNOPQRSTUVWXYZ') {
+    letterVisibility[char] = false;
+    const btn = document.querySelector(`[data-letter="${char}"]`);
+    if (btn) {
+      btn.classList.remove('btn-primary');
+      btn.classList.add('btn-outline-secondary');
+    }
+  }
+  updatePerformanceChart(statsData);
+}
+
+// Make functions globally available
+window.selectAllLetters = selectAllLetters;
+window.unselectAllLetters = unselectAllLetters;
+
+// Update performance chart with historical data
+function updatePerformanceChart(stats) {
+  if (!performanceChart) return;
+
+  // Get visible letters
+  const visibleLetters = [];
+  for (let char of 'ABCDEFGHIJKLMNOPQRSTUVWXYZ') {
+    if (letterVisibility[char]) {
+      visibleLetters.push(char);
+    }
+  }
+  
+  if (visibleLetters.length === 0 || performanceHistory.length === 0) {
+    // No letters visible or no history, show empty chart
+    performanceChart.data.labels = [];
+    performanceChart.data.datasets = [];
+    performanceChart.update();
+    return;
+  }
+
+  // Sort history by date (oldest first)
+  const sortedHistory = [...performanceHistory].sort((a, b) => 
+    new Date(a.recorded_at) - new Date(b.recorded_at)
+  );
+
+  // Get all unique dates
+  const dates = sortedHistory.map(h => h.recorded_at);
+  const uniqueDates = [...new Set(dates)].sort((a, b) => new Date(a) - new Date(b));
+
+  // Generate colors for each letter
+  const colors = [
+    'rgb(255, 99, 132)',   // Red
+    'rgb(54, 162, 235)',   // Blue
+    'rgb(75, 192, 192)',   // Teal
+    'rgb(255, 206, 86)',   // Yellow
+    'rgb(153, 102, 255)',  // Purple
+    'rgb(255, 159, 64)',   // Orange
+    'rgb(201, 203, 207)',  // Gray
+    'rgb(255, 99, 255)',   // Magenta
+    'rgb(99, 255, 132)',   // Green
+    'rgb(99, 132, 255)'    // Light Blue
+  ];
+
+  // Format dates for display in GMT+8 (frontend only - data stored in UTC)
+  const formattedDates = uniqueDates.map(date => {
+    const d = new Date(date);
+    // Convert to GMT+8 for display only
+    return d.toLocaleDateString('en-US', { 
+      timeZone: 'Asia/Manila',
+      month: 'short', 
+      day: 'numeric' 
+    });
+  });
+
+  // Create datasets for each visible letter
+  const datasets = visibleLetters.map((letter, index) => {
+    const color = colors[index % colors.length];
+    const data = uniqueDates.map(date => {
+      // Find the history record for this date
+      const historyRecord = sortedHistory.find(h => h.recorded_at === date);
+      if (!historyRecord || !historyRecord.stats) return 0;
+      
+      const letterStats = historyRecord.stats[letter];
+      if (!letterStats) return 0;
+      
+      return letterStats.mastery || 0;
+    });
+
+    return {
+      label: `Letter ${letter}`,
+      data: data,
+      borderColor: color,
+      backgroundColor: color.replace('rgb', 'rgba').replace(')', ', 0.2)'),
+      tension: 0.4,
+      fill: false,
+      pointRadius: 4,
+      pointHoverRadius: 6
+    };
+  });
+
+  // Update chart
+  performanceChart.data.labels = formattedDates;
+  performanceChart.data.datasets = datasets;
+  performanceChart.update();
+}
+
 document.addEventListener('DOMContentLoaded', function() {
   displayCurrentUser();
   generateQRCode();
+  initializePerformanceChart();
   displayUserStats();
   
   // Log dashboard access
