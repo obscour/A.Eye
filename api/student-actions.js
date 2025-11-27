@@ -1,16 +1,31 @@
 import supabase from '../lib/_supabaseClient.js'
 import { randomUUID } from 'crypto'
+import { requireAuth, hasRole, teacherCanAccessSection } from '../lib/auth-middleware.js'
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
   try {
+    const requester = req.user; // From auth middleware
     const { action, sectionId, identifier, studentId } = req.body
 
     if (!action || !sectionId) {
       return res.status(400).json({ error: 'Missing action or sectionId' })
+    }
+
+    // Authorization: Only teachers can manage students in sections (or MIS)
+    if (!hasRole(requester, ['teacher', 'mis'])) {
+      return res.status(403).json({ error: 'Forbidden: Only teachers and MIS can manage students' });
+    }
+
+    // Verify teacher owns the section (unless MIS)
+    if (requester.role === 'teacher') {
+      const canAccess = await teacherCanAccessSection(requester, sectionId);
+      if (!canAccess) {
+        return res.status(403).json({ error: 'Forbidden: Cannot access this section' });
+      }
     }
 
     if (action === 'invite') {
@@ -160,4 +175,9 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: err.message || 'Internal server error' })
   }
 }
+
+// Wrap with authorization - teachers and MIS
+export default requireAuth(handler, {
+  requiredRole: ['teacher', 'mis']
+});
 

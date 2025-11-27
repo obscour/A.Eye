@@ -12,10 +12,11 @@ async function logActivity(activity, details = '', userId = null) {
       else return;
     }
 
-    const response = await fetch('/api/audit-log', {
+    const response = await fetch('/api/audit', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        action: 'create',
         userId,
         activity,
         details
@@ -41,10 +42,9 @@ async function getAuditLogs(userId) {
       return [];
     }
 
-    const response = await fetch('/api/get-audit-logs', {
+    const response = await authenticatedFetch('/api/audit', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId })
+      body: JSON.stringify({ action: 'get', userId })
     });
 
     if (!response.ok) {
@@ -66,7 +66,10 @@ async function getAuditLogs(userId) {
 async function getAllAuditLogs() {
   try {
     // Use the combined endpoint without userId to get all logs
-    const response = await fetch('/api/get-audit-logs');
+    const response = await authenticatedFetch('/api/audit', {
+      method: 'POST',
+      body: JSON.stringify({ action: 'get-all' }) // No userId = get all (MIS only)
+    });
     
     if (!response.ok) {
       throw new Error(`Failed to fetch audit logs: ${response.status}`);

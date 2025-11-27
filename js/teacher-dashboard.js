@@ -93,10 +93,9 @@ async function loadSections() {
     const teacher = checkTeacherAuth();
     if (!teacher) return;
 
-    const response = await fetch('/api/get-sections', {
+    const response = await authenticatedFetch('/api/sections', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ teacherId: teacher.id })
+      body: JSON.stringify({ action: 'get-sections', teacherId: teacher.id })
     });
 
     if (!response.ok) {
@@ -249,9 +248,8 @@ async function togglePinSection(sectionId, pinStatus) {
     const teacher = checkTeacherAuth();
     if (!teacher) return;
 
-    const response = await fetch('/api/section-actions', {
+    const response = await authenticatedFetch('/api/section-actions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
         action: 'toggle-pin',
         sectionId: sectionId,
@@ -295,9 +293,8 @@ async function deleteSection(sectionId, sectionName) {
     const teacher = checkTeacherAuth();
     if (!teacher) return;
 
-    const response = await fetch('/api/section-actions', {
+    const response = await authenticatedFetch('/api/section-actions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
         action: 'delete',
         sectionId: sectionId,
@@ -321,7 +318,7 @@ async function deleteSection(sectionId, sectionName) {
 
     // Log activity
     if (window.auditLog) {
-      await window.auditLog.logActivity('section_deleted', `Deleted section: ${sectionName}`, teacher.id);
+      await window.auditLog.logActivity('SECTION_DELETED', `Deleted section: ${sectionName}`, teacher.id);
     }
   } catch (error) {
     console.error('Error deleting section:', error);
@@ -359,11 +356,11 @@ async function openSection(sectionId) {
   // Hide empty state and show section content
   if (sectionContentEmpty) {
     sectionContentEmpty.classList.add('section-hidden');
-    sectionContentEmpty.style.display = 'none';
+    sectionContentEmpty.setAttribute('style', 'display: none !important; visibility: hidden !important;');
   }
   if (sectionContent) {
     sectionContent.classList.remove('section-hidden');
-    sectionContent.style.display = 'block';
+    sectionContent.setAttribute('style', 'display: block !important; visibility: visible !important; width: 626px; height: 426px; position: absolute; top: 0; left: 0; z-index: 2;');
   }
   
   await loadSectionStudents();
@@ -379,11 +376,11 @@ function closeSection() {
   
   if (sectionContent) {
     sectionContent.classList.add('section-hidden');
-    sectionContent.style.display = 'none';
+    sectionContent.setAttribute('style', 'display: none !important; visibility: hidden !important;');
   }
   if (sectionContentEmpty) {
     sectionContentEmpty.classList.remove('section-hidden');
-    sectionContentEmpty.style.display = 'flex';
+    sectionContentEmpty.setAttribute('style', 'display: flex !important; visibility: visible !important; position: absolute; top: 0; left: 0; width: 626px; height: 426px; z-index: 1;');
   }
   
   const studentProgressSection = document.getElementById('studentProgressSection');
@@ -398,13 +395,17 @@ function closeSection() {
 
 // Function to load students in current section
 async function loadSectionStudents() {
-  if (!currentSection) return;
+  if (!currentSection) {
+    console.error('No current section set');
+    return;
+  }
+
+  console.log('Loading students for section:', currentSection.id, currentSection.name);
 
   try {
-    const response = await fetch('/api/get-section-students', {
+    const response = await authenticatedFetch('/api/sections', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sectionId: currentSection.id })
+      body: JSON.stringify({ action: 'get-students', sectionId: currentSection.id })
     });
 
     if (!response.ok) {
@@ -412,15 +413,21 @@ async function loadSectionStudents() {
     }
 
     const result = await response.json();
+    console.log('Students API response:', result);
     sectionStudents = result.students || [];
+    
+    console.log('Loaded students:', sectionStudents.length, sectionStudents);
     
     // Reset sorted list and apply current sort
     sortedSectionStudents = [];
     sortStudents(); // This will sort and render
   } catch (error) {
     console.error('Error loading section students:', error);
-    document.getElementById('sectionStudentsBody').innerHTML = 
-      '<tr><td colspan="4" class="text-danger text-center">Error loading students: ' + error.message + '</td></tr>';
+    const tbody = document.getElementById('sectionStudentsBody');
+    if (tbody) {
+      tbody.innerHTML = 
+        '<tr><td colspan="2" class="text-danger text-center">Error loading students: ' + error.message + '</td></tr>';
+    }
   }
 }
 
@@ -467,10 +474,17 @@ function sortStudents() {
 // Function to render students in section
 function renderSectionStudents() {
   const tbody = document.getElementById('sectionStudentsBody');
+  if (!tbody) {
+    console.error('sectionStudentsBody element not found!');
+    return;
+  }
+  
   tbody.innerHTML = '';
 
   // Use sorted list if available, otherwise use original list
   const studentsToRender = sortedSectionStudents.length > 0 ? sortedSectionStudents : sectionStudents;
+
+  console.log('Rendering students:', studentsToRender.length, studentsToRender);
 
   if (studentsToRender.length === 0) {
     tbody.innerHTML = '<tr><td colspan="2" class="text-center text-muted small">No students in this section yet. Invite students to get started!</td></tr>';
@@ -489,8 +503,54 @@ function renderSectionStudents() {
         </div>
       </td>
     `;
+    // Ensure row is visible
+    row.style.display = 'table-row';
+    row.style.visibility = 'visible';
     tbody.appendChild(row);
   });
+  
+  // Ensure table is visible
+  const table = document.getElementById('sectionStudentsTable');
+  const tableContainer = tbody.closest('.table-responsive');
+  if (table) {
+    table.style.display = 'table';
+    table.style.visibility = 'visible';
+    table.style.height = 'auto';
+    table.style.minHeight = '50px';
+  }
+  if (tableContainer) {
+    tableContainer.style.display = 'block';
+    tableContainer.style.visibility = 'visible';
+    tableContainer.style.minHeight = '150px';
+    tableContainer.style.height = 'auto';
+    // Force a reflow to ensure visibility
+    void tableContainer.offsetHeight;
+  }
+  
+  // Log for debugging - check if rows are actually in DOM
+  console.log('Table container:', tableContainer);
+  console.log('Table:', table);
+  console.log('Tbody children:', tbody.children.length);
+  if (tbody.children.length > 0) {
+    console.log('First row:', tbody.children[0]);
+    const firstRowStyle = window.getComputedStyle(tbody.children[0]);
+    console.log('First row computed style:', firstRowStyle);
+    console.log('First row display:', firstRowStyle.display);
+    console.log('First row visibility:', firstRowStyle.visibility);
+    console.log('First row height:', firstRowStyle.height);
+  }
+  if (tableContainer) {
+    const containerStyle = window.getComputedStyle(tableContainer);
+    console.log('Container height:', containerStyle.height);
+    console.log('Container max-height:', containerStyle.maxHeight);
+    console.log('Container overflow-y:', containerStyle.overflowY);
+    console.log('Container display:', containerStyle.display);
+  }
+  if (table) {
+    const tableStyle = window.getComputedStyle(table);
+    console.log('Table height:', tableStyle.height);
+    console.log('Table display:', tableStyle.display);
+  }
 }
 
 // Function to view student progress
@@ -552,10 +612,9 @@ async function viewStudentProgress(studentId) {
   }
 
   try {
-    const response = await fetch('/api/get-user-stats', {
+    const response = await authenticatedFetch('/api/user-data', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: studentId })
+      body: JSON.stringify({ action: 'get-stats', userId: studentId })
     });
 
     if (!response.ok) {
@@ -628,37 +687,98 @@ function initializePerformanceChart() {
     },
     options: {
       responsive: true,
-      maintainAspectRatio: true,
+      maintainAspectRatio: false,
+      aspectRatio: 2.5,
+      layout: {
+        padding: {
+          top: 10,
+          bottom: 10,
+          left: 10,
+          right: 10
+        }
+      },
+      interaction: {
+        mode: 'index',
+        intersect: false
+      },
       scales: {
         y: {
           beginAtZero: true,
+          max: 100,
           title: {
             display: true,
-            text: 'Mastery Score'
+            text: 'Mastery Score (%)',
+            font: {
+              size: 14,
+              weight: 'bold'
+            },
+            padding: { top: 10, bottom: 10 }
+          },
+          ticks: {
+            font: {
+              size: 12
+            },
+            stepSize: 10
+          },
+          grid: {
+            color: 'rgba(0, 0, 0, 0.1)',
+            lineWidth: 1
           }
         },
         x: {
           title: {
             display: true,
-            text: 'Date'
+            text: 'Date',
+            font: {
+              size: 14,
+              weight: 'bold'
+            },
+            padding: { top: 10, bottom: 10 }
+          },
+          ticks: {
+            font: {
+              size: 11
+            },
+            maxRotation: 45,
+            minRotation: 45
+          },
+          grid: {
+            color: 'rgba(0, 0, 0, 0.1)',
+            lineWidth: 1
           }
         }
       },
       plugins: {
         legend: {
-          display: true,
-          position: 'top'
+          display: false // Disable built-in legend, we'll use custom one
         },
         tooltip: {
           mode: 'index',
-          intersect: false
+          intersect: false,
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          padding: 10,
+          titleFont: {
+            size: 13,
+            weight: 'bold'
+          },
+          bodyFont: {
+            size: 12
+          },
+          borderColor: 'rgba(255, 255, 255, 0.2)',
+          borderWidth: 1,
+          displayColors: true,
+          callbacks: {
+            label: function(context) {
+              return context.dataset.label + ': ' + context.parsed.y.toFixed(1) + '%';
+            }
+          }
         }
       }
     }
   });
 
-  // Create letter toggle buttons
-  createLetterToggles();
+  // Initialize custom legend (shows all letters)
+  updateCustomLegend();
 }
 
 // Load performance history data for current student
@@ -666,10 +786,9 @@ async function loadPerformanceHistory(studentId) {
   try {
     if (!studentId) return;
     
-    const response = await fetch('/api/get-performance-history', {
+    const response = await authenticatedFetch('/api/user-data', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: studentId })
+      body: JSON.stringify({ action: 'get-history', userId: studentId })
     });
     
     if (!response.ok) {
@@ -687,69 +806,29 @@ async function loadPerformanceHistory(studentId) {
   }
 }
 
-// Create toggle buttons for each letter
-function createLetterToggles() {
-  const toggleGroup = document.getElementById('letterToggleGroup');
-  if (!toggleGroup) return;
-
-  toggleGroup.innerHTML = '';
-  
-  // Create a button for each letter
-  for (let char of 'ABCDEFGHIJKLMNOPQRSTUVWXYZ') {
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'btn btn-sm btn-outline-secondary';
-    btn.textContent = char;
-    btn.dataset.letter = char;
-    btn.onclick = () => toggleLetter(char);
-    toggleGroup.appendChild(btn);
-  }
-}
-
-// Toggle letter visibility
+// Toggle letter visibility (called from legend click)
 function toggleLetter(letter) {
   letterVisibility[letter] = !letterVisibility[letter];
-  
-  // Update button style
-  const btn = document.querySelector(`[data-letter="${letter}"]`);
-  if (btn) {
-    if (letterVisibility[letter]) {
-      btn.classList.remove('btn-outline-secondary');
-      btn.classList.add('btn-primary');
-    } else {
-      btn.classList.remove('btn-primary');
-      btn.classList.add('btn-outline-secondary');
-    }
-  }
-
-  // Update chart
   updatePerformanceChart();
+  updateCustomLegend(); // Update legend to reflect new state
 }
 
 // Select all letters
 function selectAllLetters() {
   for (let char of 'ABCDEFGHIJKLMNOPQRSTUVWXYZ') {
     letterVisibility[char] = true;
-    const btn = document.querySelector(`[data-letter="${char}"]`);
-    if (btn) {
-      btn.classList.remove('btn-outline-secondary');
-      btn.classList.add('btn-primary');
-    }
   }
   updatePerformanceChart();
+  updateCustomLegend(); // Update legend to reflect selection
 }
 
 // Unselect all letters
 function unselectAllLetters() {
   for (let char of 'ABCDEFGHIJKLMNOPQRSTUVWXYZ') {
     letterVisibility[char] = false;
-    const btn = document.querySelector(`[data-letter="${char}"]`);
-    if (btn) {
-      btn.classList.remove('btn-primary');
-      btn.classList.add('btn-outline-secondary');
-    }
   }
   updatePerformanceChart();
+  updateCustomLegend(); // Update legend to reflect selection
 }
 
 // Update performance chart with historical data
@@ -781,7 +860,7 @@ function updatePerformanceChart(stats) {
   const dates = sortedHistory.map(h => h.recorded_at);
   const uniqueDates = [...new Set(dates)].sort((a, b) => new Date(a) - new Date(b));
 
-  // Generate colors for each letter
+  // Generate more distinct colors for better visibility
   const colors = [
     'rgb(255, 99, 132)',   // Red
     'rgb(54, 162, 235)',   // Blue
@@ -792,7 +871,23 @@ function updatePerformanceChart(stats) {
     'rgb(201, 203, 207)',  // Gray
     'rgb(255, 99, 255)',   // Magenta
     'rgb(99, 255, 132)',   // Green
-    'rgb(99, 132, 255)'    // Light Blue
+    'rgb(99, 132, 255)',   // Light Blue
+    'rgb(255, 0, 0)',      // Bright Red
+    'rgb(0, 128, 255)',    // Bright Blue
+    'rgb(0, 200, 0)',       // Bright Green
+    'rgb(255, 128, 0)',     // Bright Orange
+    'rgb(128, 0, 255)',     // Bright Purple
+    'rgb(255, 0, 128)',     // Pink
+    'rgb(0, 255, 255)',     // Cyan
+    'rgb(255, 255, 0)',     // Bright Yellow
+    'rgb(128, 128, 128)',   // Medium Gray
+    'rgb(0, 0, 255)',       // Pure Blue
+    'rgb(255, 128, 128)',   // Light Red
+    'rgb(128, 255, 128)',   // Light Green
+    'rgb(128, 128, 255)',   // Light Purple
+    'rgb(255, 192, 128)',   // Peach
+    'rgb(192, 255, 192)',   // Light Mint
+    'rgb(192, 192, 255)'    // Lavender
   ];
 
   // Format dates for display in GMT+8 (frontend only - data stored in UTC)
@@ -806,6 +901,11 @@ function updatePerformanceChart(stats) {
     });
   });
 
+  // Warn if too many letters selected (hard to read)
+  if (visibleLetters.length > 10) {
+    console.warn(`Warning: ${visibleLetters.length} letters selected. Consider selecting fewer letters for better readability.`);
+  }
+
   // Create datasets for each visible letter
   const datasets = visibleLetters.map((letter, index) => {
     const color = colors[index % colors.length];
@@ -817,18 +917,27 @@ function updatePerformanceChart(stats) {
       const letterStats = historyRecord.stats[letter];
       if (!letterStats) return 0;
       
-      return letterStats.mastery || 0;
+      // Ensure mastery is in 0-100 range (convert from 0-1 if needed)
+      let mastery = letterStats.mastery || 0;
+      if (mastery > 0 && mastery <= 1) {
+        mastery = mastery * 100; // Convert from decimal to percentage
+      }
+      return mastery;
     });
 
     return {
       label: `Letter ${letter}`,
       data: data,
       borderColor: color,
-      backgroundColor: color.replace('rgb', 'rgba').replace(')', ', 0.2)'),
+      backgroundColor: color.replace('rgb', 'rgba').replace(')', ', 0.1)'),
+      borderWidth: 2.5,
       tension: 0.4,
       fill: false,
-      pointRadius: 4,
-      pointHoverRadius: 6
+      pointRadius: 5,
+      pointHoverRadius: 8,
+      pointBorderWidth: 2,
+      pointBackgroundColor: color,
+      pointBorderColor: '#fff'
     };
   });
 
@@ -836,6 +945,135 @@ function updatePerformanceChart(stats) {
   performanceChart.data.labels = formattedDates;
   performanceChart.data.datasets = datasets;
   performanceChart.update();
+  
+  // Update custom legend
+  updateCustomLegend();
+}
+
+// Function to update custom legend outside chart container - always shows all letters
+function updateCustomLegend() {
+  const legendContainer = document.getElementById('chartLegend');
+  if (!legendContainer) {
+    return;
+  }
+  
+  // Preserve the buttons container (Select All/Select None) - don't clear entire container
+  const buttonsContainer = legendContainer.querySelector('.d-flex.justify-content-center.gap-2');
+  if (!buttonsContainer) {
+    // If buttons don't exist, create them
+    const btnContainer = document.createElement('div');
+    btnContainer.className = 'd-flex justify-content-center gap-2 mb-2';
+    btnContainer.innerHTML = `
+      <button type="button" class="btn btn-sm btn-outline-primary" onclick="selectAllLetters()">Select All</button>
+      <button type="button" class="btn btn-sm btn-outline-secondary" onclick="unselectAllLetters()">Select None</button>
+    `;
+    legendContainer.insertBefore(btnContainer, legendContainer.firstChild);
+  }
+  
+  // Generate colors for all letters (same as in updatePerformanceChart)
+  const colors = [
+    'rgb(255, 99, 132)',   // Red
+    'rgb(54, 162, 235)',   // Blue
+    'rgb(75, 192, 192)',   // Teal
+    'rgb(255, 206, 86)',   // Yellow
+    'rgb(153, 102, 255)',  // Purple
+    'rgb(255, 159, 64)',   // Orange
+    'rgb(201, 203, 207)',  // Gray
+    'rgb(255, 99, 255)',   // Magenta
+    'rgb(99, 255, 132)',   // Green
+    'rgb(99, 132, 255)',   // Light Blue
+    'rgb(255, 0, 0)',      // Bright Red
+    'rgb(0, 128, 255)',    // Bright Blue
+    'rgb(0, 200, 0)',       // Bright Green
+    'rgb(255, 128, 0)',     // Bright Orange
+    'rgb(128, 0, 255)',     // Bright Purple
+    'rgb(255, 0, 128)',     // Pink
+    'rgb(0, 255, 255)',     // Cyan
+    'rgb(255, 255, 0)',     // Bright Yellow
+    'rgb(128, 128, 128)',   // Medium Gray
+    'rgb(0, 0, 255)',       // Pure Blue
+    'rgb(255, 128, 128)',   // Light Red
+    'rgb(128, 255, 128)',   // Light Green
+    'rgb(128, 128, 255)',   // Light Purple
+    'rgb(255, 192, 128)',   // Peach
+    'rgb(192, 255, 192)',   // Light Mint
+    'rgb(192, 192, 255)'    // Lavender
+  ];
+  
+  // Clear existing legend items (but keep buttons)
+  const existingLegend = legendContainer.querySelector('.legend-list');
+  if (existingLegend) {
+    existingLegend.remove();
+  }
+  
+  const legendList = document.createElement('div');
+  legendList.className = 'legend-list d-flex flex-wrap justify-content-center gap-2';
+  legendList.style.fontSize = '0.75rem';
+  
+  // Create legend items for all 26 letters
+  for (let i = 0; i < 26; i++) {
+    const letter = String.fromCharCode(65 + i); // A-Z
+    const color = colors[i % colors.length];
+    const isVisible = letterVisibility[letter] || false;
+    
+    // Check if this letter is hidden in the chart
+    let isHidden = false;
+    if (performanceChart) {
+      const datasetIndex = performanceChart.data.datasets.findIndex(d => d.label === `Letter ${letter}`);
+      if (datasetIndex >= 0) {
+        const meta = performanceChart.getDatasetMeta(datasetIndex);
+        isHidden = meta ? meta.hidden : false;
+      }
+    }
+    
+    const legendItem = document.createElement('span');
+    legendItem.className = 'legend-item d-inline-flex align-items-center me-2';
+    legendItem.style.cursor = 'pointer';
+    legendItem.style.marginBottom = '0.25rem';
+    legendItem.style.userSelect = 'none';
+    
+    const colorBox = document.createElement('span');
+    colorBox.style.width = '12px';
+    colorBox.style.height = '12px';
+    colorBox.style.borderRadius = '50%';
+    colorBox.style.backgroundColor = color;
+    colorBox.style.display = 'inline-block';
+    colorBox.style.marginRight = '6px';
+    colorBox.style.flexShrink = '0';
+    colorBox.style.border = '1px solid rgba(0,0,0,0.1)';
+    
+    const label = document.createElement('span');
+    label.textContent = `Letter ${letter}`;
+    label.style.color = (!isVisible || isHidden) ? '#999' : '#333';
+    label.style.textDecoration = (!isVisible || isHidden) ? 'line-through' : 'none';
+    label.style.fontWeight = '500';
+    
+    legendItem.appendChild(colorBox);
+    legendItem.appendChild(label);
+    
+    // Toggle visibility on click
+    legendItem.addEventListener('click', () => {
+      // Toggle letter visibility
+      letterVisibility[letter] = !letterVisibility[letter];
+      
+      // Update chart
+      if (performanceChart) {
+        updatePerformanceChart();
+      }
+      
+      // Update legend to reflect new state
+      updateCustomLegend();
+    });
+    
+    legendList.appendChild(legendItem);
+  }
+  
+  // Insert legend list after buttons
+  if (buttonsContainer && buttonsContainer.nextSibling) {
+    legendContainer.insertBefore(legendList, buttonsContainer.nextSibling);
+  } else {
+    legendContainer.appendChild(legendList);
+  }
 }
 
 // Function to render student stats table
@@ -913,9 +1151,8 @@ async function createSection() {
     const teacher = checkTeacherAuth();
     if (!teacher) return;
 
-    const response = await fetch('/api/section-actions', {
+    const response = await authenticatedFetch('/api/section-actions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
         action: 'create',
         teacherId: teacher.id,
@@ -938,7 +1175,7 @@ async function createSection() {
 
     // Log activity
     if (window.auditLog) {
-      await window.auditLog.logActivity('section_created', `Created section: ${sectionName}`, teacher.id);
+      await window.auditLog.logActivity('SECTION_CREATED', `Created section: ${sectionName}`, teacher.id);
     }
   } catch (error) {
     console.error('Error creating section:', error);
@@ -981,9 +1218,8 @@ async function inviteStudent() {
     const teacher = checkTeacherAuth();
     if (!teacher) return;
 
-    const response = await fetch('/api/student-actions', {
+    const response = await authenticatedFetch('/api/student-actions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
         action: 'invite',
         sectionId: currentSection.id,
@@ -1044,9 +1280,8 @@ async function removeStudentFromSection(studentId) {
     const teacher = checkTeacherAuth();
     if (!teacher) return;
 
-    const response = await fetch('/api/student-actions', {
+    const response = await authenticatedFetch('/api/student-actions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
         action: 'remove',
         sectionId: currentSection.id,
@@ -1111,11 +1346,11 @@ document.addEventListener('DOMContentLoaded', function() {
   const sectionContentEmpty = document.getElementById('sectionContentEmpty');
   if (sectionContent) {
     sectionContent.classList.add('section-hidden');
-    sectionContent.style.display = 'none';
+    sectionContent.setAttribute('style', 'display: none !important; visibility: hidden !important;');
   }
   if (sectionContentEmpty) {
     sectionContentEmpty.classList.remove('section-hidden');
-    sectionContentEmpty.style.display = 'flex';
+    sectionContentEmpty.setAttribute('style', 'display: flex !important; visibility: visible !important; position: absolute; top: 0; left: 0; width: 626px; height: 426px; z-index: 1;');
   }
   
   // Hide student progress on page load
@@ -1171,9 +1406,5 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
-  // Log dashboard access
-  if (window.auditLog) {
-    window.auditLog.logActivity('dashboard_access', 'Teacher accessed dashboard', teacher.id);
-  }
 });
 

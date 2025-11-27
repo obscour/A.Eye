@@ -1,16 +1,39 @@
 import supabase from '../lib/_supabaseClient.js'
 import { randomBytes, randomUUID } from 'crypto'
+import { requireAuth, hasRole, teacherCanAccessSection } from '../lib/auth-middleware.js'
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
   try {
+    const requester = req.user; // From auth middleware
     const { action, sectionId, teacherId, pinned, name } = req.body
 
     if (!action || !teacherId) {
       return res.status(400).json({ error: 'Missing action or teacherId' })
+    }
+
+    // Authorization: Only teachers can manage sections (or MIS)
+    if (!hasRole(requester, ['teacher', 'mis'])) {
+      return res.status(403).json({ error: 'Forbidden: Only teachers and MIS can manage sections' });
+    }
+
+    // For non-MIS users, verify they own the section (except for create)
+    if (requester.role === 'teacher' && action !== 'create') {
+      if (!sectionId) {
+        return res.status(400).json({ error: 'Missing sectionId' });
+      }
+      const canAccess = await teacherCanAccessSection(requester, sectionId);
+      if (!canAccess) {
+        return res.status(403).json({ error: 'Forbidden: Cannot access this section' });
+      }
+    }
+
+    // For create action, verify teacherId matches requester (unless MIS)
+    if (action === 'create' && requester.role === 'teacher' && teacherId !== requester.uuid) {
+      return res.status(403).json({ error: 'Forbidden: Can only create sections for yourself' });
     }
 
     if (action === 'create') {
@@ -141,4 +164,9 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: err.message || 'Internal server error' })
   }
 }
+
+// Wrap with authorization - teachers and MIS
+export default requireAuth(handler, {
+  requiredRole: ['teacher', 'mis']
+});
 

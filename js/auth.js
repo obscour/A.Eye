@@ -60,6 +60,15 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
       localStorage.setItem("mis", JSON.stringify(result.user));
     }
 
+    // Log login activity for all user types
+    if (window.auditLog && result.user) {
+      const roleLabel = result.user.role === 'mis' ? 'MIS' : 
+                       result.user.role === 'teacher' ? 'Teacher' : 
+                       result.user.role === 'admin' ? 'Admin' : 'Student';
+      const userId = result.user.id || result.user.uuid;
+      await window.auditLog.logActivity('login', `${roleLabel} ${result.user.username} logged in`, userId);
+    }
+
     // Redirect based on role
     setTimeout(() => {
       if (result.user.role === "admin") {

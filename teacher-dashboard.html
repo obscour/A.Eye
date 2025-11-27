@@ -50,7 +50,7 @@
               </div>
             </div>
             <!-- Sections Table -->
-            <div class="table-responsive flex-grow-1" style="max-height: 200px; overflow-y: auto; overflow-x: auto; min-height: 0;">
+            <div class="table-responsive flex-grow-1" style="max-height: 300px; overflow-y: auto; overflow-x: auto; min-height: 0; flex: 1;">
               <table class="table table-sm table-hover align-middle mb-0">
                 <thead class="table-light sticky-top">
                   <tr>
@@ -76,9 +76,9 @@
       </div>
 
       <!-- Right Column: Students in This Section -->
-      <div class="col-lg-6">
+      <div class="col-lg-6" style="position: relative;">
         <!-- Empty State -->
-        <div id="sectionContentEmpty" class="card d-flex align-items-center justify-content-center shadow-sm" style="height: 100%; min-height: 400px; max-height: 500px;">
+        <div id="sectionContentEmpty" class="card d-flex align-items-center justify-content-center shadow-sm" style="position: absolute; top: 0; left: 0; width: 626px; height: 426px; z-index: 1;">
           <div class="text-center text-muted">
             <h6 class="fw-bold mb-2">No Section Selected</h6>
             <p class="mb-0 small">Click on a section to view students</p>
@@ -86,7 +86,7 @@
         </div>
         
         <!-- Section Content (hidden by default) -->
-        <div id="sectionContent" class="card section-hidden shadow-sm" style="display: none; height: 100%; max-height: 500px;">
+        <div id="sectionContent" class="card section-hidden shadow-sm" style="display: none; position: absolute; top: 0; left: 0; width: 626px; height: 426px; z-index: 2;">
           <!-- Section Header -->
           <div class="card-header bg-white border-bottom py-2 flex-shrink-0">
             <div class="d-flex justify-content-between align-items-center mb-1">
@@ -98,7 +98,7 @@
               <button class="btn btn-sm btn-primary w-100" onclick="showInviteStudentModal()">Add Student</button>
             </div>
           </div>
-          <div class="card-body p-2 d-flex flex-column" style="overflow: hidden; flex: 1; min-height: 0;">
+          <div class="card-body p-2 d-flex flex-column" style="overflow: visible; flex: 1; min-height: 200px; padding-bottom: 0.5rem !important;">
             <!-- Students in Section -->
             <div class="d-flex justify-content-between align-items-center mb-2 flex-shrink-0">
               <h6 class="mb-0 fw-bold small">Students in This Section</h6>
@@ -107,12 +107,12 @@
                 <option value="name-desc">Z-A</option>
               </select>
             </div>
-            <div class="table-responsive flex-grow-1" style="max-height: 200px; overflow-y: auto; min-height: 0;">
-              <table class="table table-sm table-hover mb-0" id="sectionStudentsTable">
+            <div class="table-responsive flex-grow-1" style="overflow-y: auto; overflow-x: auto; min-height: 150px; max-height: 250px; flex: 1; width: 100%; height: auto;">
+              <table class="table table-sm table-hover mb-0" id="sectionStudentsTable" style="width: 100%; table-layout: fixed;">
                 <thead class="table-light sticky-top">
                   <tr>
-                    <th class="small">Student</th>
-                    <th class="text-end small" style="width: 80px;">Actions</th>
+                    <th class="small" style="width: calc(100% - 120px);">Student</th>
+                    <th class="text-end small" style="width: 120px;">Actions</th>
                   </tr>
                 </thead>
                 <tbody id="sectionStudentsBody">
@@ -146,19 +146,18 @@
           <div class="card-body">
             <!-- Performance Graph -->
             <div class="card p-3 mb-3">
-              <div class="d-flex justify-content-between align-items-center mb-2">
+              <div class="mb-2">
                 <h6 class="mb-0">Performance Graph</h6>
-                <div class="d-flex align-items-center gap-2">
-                  <div class="btn-group btn-group-sm" role="group">
-                    <button type="button" class="btn btn-outline-primary" onclick="selectAllLetters()">Select All</button>
-                    <button type="button" class="btn btn-outline-secondary" onclick="unselectAllLetters()">Unselect All</button>
-                  </div>
-                  <div class="btn-group btn-group-sm" role="group" id="letterToggleGroup">
-                    <!-- Letter toggles will be added dynamically -->
+              </div>
+              <div class="chart-container" style="height: 400px !important; min-height: 400px !important; max-height: 400px !important; padding: 0; margin: 0; flex-shrink: 0; display: flex; flex-direction: column;">
+                <div id="chartLegend" class="chart-legend-container mb-2" style="flex-shrink: 0; max-height: 100px; overflow-y: auto;">
+                  <div class="d-flex justify-content-center gap-2 mb-2">
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="selectAllLetters()">Select All</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="unselectAllLetters()">Select None</button>
                   </div>
                 </div>
+                <canvas id="performanceChart" style="flex: 1; min-height: 0; height: 100% !important; width: 100% !important;"></canvas>
               </div>
-              <canvas id="performanceChart" style="max-height: 400px;"></canvas>
             </div>
             
             <!-- Performance Sheet -->
@@ -237,6 +236,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+  <script src="js/api-helper.js"></script>
   <script src="js/audit-log.js"></script>
   <script src="js/teacher-dashboard.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>

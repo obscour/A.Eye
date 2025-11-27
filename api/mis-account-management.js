@@ -1,17 +1,40 @@
 import supabase from '../lib/_supabaseClient.js'
 import { randomUUID } from 'crypto'
 import { hashPassword } from '../lib/_passwordUtils.js'
+import { requireAuth, hasRole } from '../lib/auth-middleware.js'
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
   try {
+    const requester = req.user; // From auth middleware
+
+    // Authorization: Only MIS can manage accounts
+    if (!hasRole(requester, 'mis')) {
+      return res.status(403).json({ error: 'Forbidden: Only MIS can manage accounts' });
+    }
+
     const { action, userId, accountData } = req.body
 
     if (!action) {
       return res.status(400).json({ error: 'Missing action' })
+    }
+
+    // Handle get-students action (MIS only - view all students)
+    if (action === 'get-students') {
+      const { data: users, error } = await supabase
+        .from('users')
+        .select('uuid, username, email, role, created_at, first_name, last_name')
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        console.error('Error fetching users:', error)
+        return res.status(500).json({ error: error.message })
+      }
+
+      return res.status(200).json({ users: users || [] })
     }
 
     // Handle get-next-mis-id action
@@ -335,4 +358,9 @@ export default async function handler(req, res) {
     })
   }
 }
+
+// Wrap with authorization - MIS only
+export default requireAuth(handler, {
+  requiredRole: 'mis'
+});
 

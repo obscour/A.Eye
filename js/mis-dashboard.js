@@ -87,7 +87,10 @@ function displayMISName() {
 // Function to load all accounts
 async function loadAccounts() {
   try {
-    const response = await fetch('/api/get-students');
+    const response = await authenticatedFetch('/api/mis-account-management', {
+      method: 'POST',
+      body: JSON.stringify({ action: 'get-students' })
+    });
     
     if (!response.ok) {
       throw new Error(`Failed to load accounts: ${response.status}`);
@@ -409,9 +412,8 @@ function togglePasswordVisibility(passwordFieldId, toggleButtonId) {
 // Function to generate sequential MIS ID
 async function generateSequentialMisId() {
   try {
-    const response = await fetch('/api/mis-account-management', {
+    const response = await authenticatedFetch('/api/mis-account-management', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         action: 'get-next-mis-id'
       })
@@ -498,9 +500,8 @@ async function createAccount() {
     const mis = checkMISAuth();
     if (!mis) return;
 
-    const response = await fetch('/api/mis-account-management', {
+    const response = await authenticatedFetch('/api/mis-account-management', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         action: 'create',
         accountData: {
@@ -713,9 +714,8 @@ async function updateAccount() {
     const mis = checkMISAuth();
     if (!mis) return;
 
-    const response = await fetch('/api/mis-account-management', {
+    const response = await authenticatedFetch('/api/mis-account-management', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         action: 'update',
         userId: currentAccount.uuid,
@@ -803,9 +803,8 @@ async function deleteAccount(userId, username) {
     const mis = checkMISAuth();
     if (!mis) return;
 
-    const response = await fetch('/api/mis-account-management', {
+    const response = await authenticatedFetch('/api/mis-account-management', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         action: 'delete',
         userId
@@ -836,7 +835,10 @@ async function deleteAccount(userId, username) {
 // Function to load all sections
 async function loadSections() {
   try {
-    const response = await fetch('/api/get-sections?all=true');
+    const response = await authenticatedFetch('/api/sections', {
+      method: 'POST',
+      body: JSON.stringify({ action: 'get-sections', all: true })
+    });
     
     if (!response.ok) {
       throw new Error(`Failed to load sections: ${response.status}`);
@@ -891,7 +893,9 @@ function renderSections() {
       <td><span class="badge bg-primary">${section.student_count || 0}</span></td>
       <td>${section.created_at ? new Date(section.created_at).toLocaleDateString() : 'N/A'}</td>
       <td class="text-end">
-        <button class="btn btn-sm btn-primary" onclick="viewSectionStudents('${section.id}', '${section.name.replace(/'/g, "\\'")}')">View Students</button>
+        <button class="btn btn-sm btn-primary" onclick="viewSectionStudents('${section.id}', '${section.name.replace(/'/g, "\\'")}')" title="View Students">
+          <i class="bi bi-eye"></i>
+        </button>
       </td>
     `;
     tbody.appendChild(row);
@@ -901,10 +905,9 @@ function renderSections() {
 // Function to view students in a section
 async function viewSectionStudents(sectionId, sectionName) {
   try {
-    const response = await fetch('/api/get-section-students', {
+    const response = await authenticatedFetch('/api/sections', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sectionId })
+      body: JSON.stringify({ action: 'get-students', sectionId })
     });
 
     if (!response.ok) {
@@ -948,20 +951,23 @@ async function viewSectionStudents(sectionId, sectionName) {
 // Helper function to format student name for MIS view
 function formatStudentNameForMIS(student) {
   if (student.last_name && student.first_name) {
-    return `${student.last_name}, ${student.first_name} (${student.email || student.username})`;
+    return `${student.last_name}, ${student.first_name} (${student.username || student.email})`;
   } else if (student.first_name) {
-    return `${student.first_name} (${student.email || student.username})`;
+    return `${student.first_name} (${student.username || student.email})`;
   } else if (student.last_name) {
-    return `${student.last_name} (${student.email || student.username})`;
+    return `${student.last_name} (${student.username || student.email})`;
   } else {
-    return student.email || student.username || 'Unknown';
+    return student.username || student.email || 'Unknown';
   }
 }
 
 // Function to load audit logs
 async function loadAuditLogs() {
   try {
-    const response = await fetch('/api/get-audit-logs');
+    const response = await authenticatedFetch('/api/audit', {
+      method: 'POST',
+      body: JSON.stringify({ action: 'get-all' }) // No userId = get all (MIS only)
+    });
     const result = await response.json();
 
     if (!response.ok) {
@@ -1019,13 +1025,19 @@ function renderAuditLogs() {
 // Function to get activity badge for audit logs
 function getAuditActivityBadge(activity) {
   const badges = {
+    'login': '<span class="badge bg-success">LOGIN</span>',
+    'logout': '<span class="badge bg-warning text-dark">LOGOUT</span>',
     'USER_CREATED': '<span class="badge bg-success">USER_CREATED</span>',
     'USER_DELETED': '<span class="badge bg-danger">USER_DELETED</span>',
     'USER_UPDATED': '<span class="badge bg-warning text-dark">USER_UPDATED</span>',
     'SECTION_CREATED': '<span class="badge bg-info">SECTION_CREATED</span>',
     'SECTION_DELETED': '<span class="badge bg-danger">SECTION_DELETED</span>',
     'STUDENT_ADDED': '<span class="badge bg-primary">STUDENT_ADDED</span>',
-    'STUDENT_REMOVED': '<span class="badge bg-secondary">STUDENT_REMOVED</span>'
+    'STUDENT_REMOVED': '<span class="badge bg-secondary">STUDENT_REMOVED</span>',
+    // Legacy lowercase support
+    'section_created': '<span class="badge bg-info">SECTION_CREATED</span>',
+    'section_deleted': '<span class="badge bg-danger">SECTION_DELETED</span>',
+    'dashboard_access': '<span class="badge bg-info">LOGIN</span>' // Legacy support - treat as login
   };
   return badges[activity] || `<span class="badge bg-secondary">${activity}</span>`;
 }
@@ -1087,9 +1099,5 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  // Log dashboard access
-  if (window.auditLog) {
-    window.auditLog.logActivity('dashboard_access', 'MIS accessed dashboard', mis.id);
-  }
 });
 

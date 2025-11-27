@@ -1,16 +1,23 @@
 import supabase from '../lib/_supabaseClient.js'
 import { randomUUID } from 'crypto'
+import { requireAuth, canAccessUserData } from '../lib/auth-middleware.js'
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
   try {
+    const requester = req.user; // From auth middleware
     const { userId, stats } = req.body
 
     if (!userId || !stats) {
       return res.status(400).json({ error: 'Missing userId or stats' })
+    }
+
+    // Authorization: Users can only save their own performance history
+    if (!canAccessUserData(requester, userId)) {
+      return res.status(403).json({ error: 'Forbidden: Can only save your own performance history' });
     }
 
     const historyRecord = {
@@ -42,4 +49,9 @@ export default async function handler(req, res) {
     })
   }
 }
+
+// Wrap with authorization - users can only save their own data
+export default requireAuth(handler, {
+  requireOwnData: true
+});
 

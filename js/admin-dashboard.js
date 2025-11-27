@@ -87,7 +87,11 @@ function displayAdminName() {
 // Function to load all users
 async function loadUsers() {
   try {
-    const response = await fetch('/api/get-students');
+    const response = await fetch('/api/mis-account-management', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'get-students' })
+    });
     
     if (!response.ok) {
       throw new Error(`Failed to load users: ${response.status}`);
@@ -182,10 +186,10 @@ function hideUserSections() {
 // Function to load user statistics
 async function loadUserStats(userId) {
   try {
-    const response = await fetch('/api/get-user-stats', {
+    const response = await fetch('/api/user-data', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId })
+      body: JSON.stringify({ action: 'get-stats', userId })
     });
 
     if (!response.ok) {

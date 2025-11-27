@@ -1,2 +1,62 @@
+# Environment variables - NEVER commit these!
+.env
+.env.local
+.env.production
+.env.development
+.env*.local
+
+# Supabase keys and secrets
+**/supabase-key.txt
+**/supabase-url.txt
+**/secrets.json
+**/config.json
+
+# Node modules
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Build outputs
 .vercel
-node_modules
+.next
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Sensitive data
+**/credentials.json
+**/secrets/
+**/*secret*
+**/*key*
+**/*password*
+**/*token*
+
+# But allow example files
+!*.example
+!.env.example

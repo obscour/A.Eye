@@ -33,6 +33,31 @@ body {
     font-weight: bold;
   }
   
+  /* Password toggle button styling */
+  .form-floating #togglePassword {
+    z-index: 10;
+    border: none;
+    background: none;
+    padding: 0.5rem;
+    color: #6c757d;
+    cursor: pointer;
+    transition: color 0.2s;
+  }
+  
+  .form-floating #togglePassword:hover {
+    color: #495057;
+  }
+  
+  .form-floating #togglePassword:focus {
+    outline: none;
+    box-shadow: none;
+  }
+  
+  /* Ensure password input doesn't overlap with toggle button */
+  .form-floating #password {
+    padding-right: 2.5rem;
+  }
+  
   /* Form Input Field Styles */
   .form-control {
     border-radius: 10px;
@@ -225,6 +250,18 @@ body {
       width: calc(100% - 270px);
       max-width: none;
     }
+    
+    /* Increase width of graph and sheet cards on desktop */
+    .main-content-mobile .card {
+      max-width: 100%;
+    }
+    
+    .main-content-mobile .container,
+    .main-content-mobile .container-fluid {
+      max-width: 100%;
+      padding-left: 0.5rem;
+      padding-right: 0.5rem;
+    }
     .container-fluid .row {
       margin-left: 0;
       margin-right: 0;
@@ -232,8 +269,19 @@ body {
   }
   @media (min-width: 992px) {
     .main-content-mobile {
-      padding-left: 2rem;
-      padding-right: 2rem;
+      padding-left: 2.5rem;
+      padding-right: 2.5rem;
+      width: calc(100% - 270px);
+    }
+    
+    /* Give more width to graph and sheet cards on large screens */
+    .main-content-mobile .card {
+      max-width: 100%;
+    }
+    
+    .main-content-mobile .container-fluid {
+      padding-left: 1rem;
+      padding-right: 1rem;
     }
   }
   #userStatsTable th.char-col, #userStatsTable td.char-col,
@@ -372,14 +420,15 @@ body {
   .teacher-dashboard-container .row.mb-4 .col-lg-6 {
     display: flex;
     flex-direction: column;
-    height: auto;
+    height: 426px;
   }
   
   .teacher-dashboard-container .row.mb-4 .card {
     display: flex;
     flex-direction: column;
-    height: 100%;
-    max-height: 500px; /* Limit height to prevent excessive space */
+    height: 426px;
+    min-height: 426px;
+    max-height: 426px;
   }
   
   /* Fix table container to use available space */
@@ -496,19 +545,42 @@ body {
   #sectionContent.section-hidden,
   #sectionContent[style*="display: none"] {
     display: none !important;
+    visibility: hidden !important;
   }
 
   #sectionContentEmpty.section-hidden,
   #sectionContentEmpty[style*="display: none"] {
     display: none !important;
+    visibility: hidden !important;
   }
 
   #sectionContent:not(.section-hidden) {
     display: block !important;
+    visibility: visible !important;
+  }
+  
+  /* Override for when explicitly shown via inline style */
+  #sectionContent[style*="display: block"] {
+    display: block !important;
+    visibility: visible !important;
   }
 
   #sectionContentEmpty:not(.section-hidden) {
     display: flex !important;
+    visibility: visible !important;
+  }
+  
+  /* Override for when explicitly hidden via inline style */
+  #sectionContentEmpty[style*="display: none"] {
+    display: none !important;
+    visibility: hidden !important;
+  }
+  
+  /* Ensure parent container has proper height for absolute positioning */
+  .teacher-dashboard-container .row.mb-4 .col-lg-6[style*="position: relative"] {
+    height: 426px;
+    min-height: 426px;
+    max-height: 426px;
   }
 
   /* Hamburger menu button */
@@ -550,6 +622,8 @@ body {
   .teacher-dashboard-container .card-body .table-responsive {
     overflow-x: auto;
     overflow-y: auto;
+    flex: 1 1 auto;
+    min-height: 0;
   }
   
   /* Ensure dropdown container in table doesn't get clipped */
@@ -574,20 +648,335 @@ body {
     padding: 1.5rem;
   }
   
-  /* Ensure performance chart container has proper sizing */
-  .teacher-dashboard-container #performanceChart {
-    max-height: 400px !important;
+  /* Remove any unwanted outlines on card-body elements */
+  .teacher-dashboard-container .card-body {
+    outline: none !important;
+    border: none !important;
+  }
+  
+  .teacher-dashboard-container .card-body:focus,
+  .teacher-dashboard-container .card-body:active {
+    outline: none !important;
+    border: none !important;
+  }
+  
+  /* Ensure sectionContent card-body properly constrains content but allows scrolling */
+  .teacher-dashboard-container #sectionContent .card-body {
+    overflow: visible !important; /* Allow scrollbars from child to show */
+    min-height: 200px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+    flex-direction: column !important;
+    padding-bottom: 0.5rem !important; /* Ensure bottom padding for scrollbar */
+  }
+  
+  /* Ensure table-responsive can show scrollbars when needed and use all available space */
+  .teacher-dashboard-container #sectionContent .card-body .table-responsive {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    min-height: 150px !important;
+    box-sizing: border-box !important;
+    flex: 1 1 auto !important;
+    overflow-y: auto !important;
+    overflow-x: auto !important;
+    position: relative !important;
+    -webkit-overflow-scrolling: touch !important;
+    margin-bottom: 0 !important;
+    display: block !important;
+    visibility: visible !important;
+    height: auto !important;
+  }
+  
+  /* Ensure students table is visible */
+  .teacher-dashboard-container #sectionContent #sectionStudentsTable {
+    display: table !important;
+    visibility: visible !important;
+    height: auto !important;
+    min-height: 50px !important;
+  }
+  
+  .teacher-dashboard-container #sectionContent #sectionStudentsBody {
+    display: table-row-group !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+  
+  .teacher-dashboard-container #sectionContent #sectionStudentsBody tr {
+    display: table-row !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+  
+  .teacher-dashboard-container #sectionContent #sectionStudentsBody td {
+    display: table-cell !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+  
+  /* Ensure the card itself doesn't overflow */
+  .teacher-dashboard-container #sectionContent.card {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+  }
+  
+  /* Chart container wrapper for better spacing - fixed height prevents stretching/minimizing */
+  .chart-container,
+  .chart-container-mobile {
+    padding: 0;
+    background: white;
+    border-radius: 8px;
+    margin-bottom: 0;
+    position: relative;
+    width: 100%;
     height: 400px !important;
+    max-height: 400px !important;
+    min-height: 400px !important;
+    overflow: hidden;
+    flex-shrink: 0; /* Prevent shrinking */
+    display: flex;
+    flex-direction: column;
+  }
+  
+  /* Custom legend container - outside chart area */
+  .chart-legend-container {
+    flex-shrink: 0;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #e9ecef;
+    margin-bottom: 0.5rem;
+  }
+  
+  .chart-legend-container .legend-item:hover {
+    opacity: 0.7;
+  }
+  
+  /* Select All/Select None buttons in legend */
+  .chart-legend-container .d-flex.justify-content-center.gap-2 {
+    margin-bottom: 0.5rem;
+  }
+  
+  /* Canvas takes remaining space */
+  .chart-container canvas {
+    flex: 1;
+    min-height: 0;
+  }
+  
+  /* Ensure card containing graph doesn't shrink */
+  .card:has(.chart-container) {
+    display: flex;
+    flex-direction: column;
+    min-height: fit-content;
+  }
+  
+  .card:has(.chart-container) .chart-container {
+    flex-shrink: 0 !important;
+    flex-grow: 0 !important;
+    height: 400px !important;
+  }
+  
+  /* Ensure buttons section doesn't affect chart size */
+  .card:has(.chart-container) .mt-3 {
+    flex-shrink: 0;
+    margin-top: 1rem !important;
+  }
+  
+  /* Letter toggle buttons below graph - centered and wrapping */
+  #letterToggleGroup {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+    gap: 0.25rem;
+    margin-top: 0.5rem;
+  }
+  
+  #letterToggleGroup .btn {
+    margin: 0;
+  }
+  
+  /* Center the Select All/Unselect All buttons */
+  .btn-group.justify-content-center {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+  }
+  
+  /* Improve chart canvas visibility - fixed height prevents stretching */
+  canvas#performanceChart {
+    max-width: 100% !important;
+    max-height: 100% !important;
+    height: 100% !important;
+    width: 100% !important;
+    flex-shrink: 0;
+  }
+  
+  /* Ensure chart container parent maintains size */
+  .chart-container {
+    box-sizing: border-box;
+  }
+  
+  /* Teacher dashboard chart container */
+  .teacher-dashboard-container .chart-container {
+    height: 400px !important;
+    max-height: 400px !important;
+    min-height: 400px !important;
+  }
+  
+  /* Mobile chart adjustments */
+  @media (max-width: 767.98px) {
+    .chart-container {
+      height: 350px !important;
+      max-height: 350px !important;
+      min-height: 350px !important;
+      padding: 0.75rem;
+    }
+    
+    canvas#performanceChart {
+      max-height: 100%;
+      height: 100% !important;
+    }
+  }
+  
+  /* MIS Dashboard - Make code column thinner on mobile */
+  @media (max-width: 767.98px) {
+    /* Target sections table in MIS dashboard - Code column (2nd column) */
+    #sections .table th:nth-child(2),
+    #sections .table td:nth-child(2) {
+      max-width: 70px;
+      min-width: 60px;
+      width: 70px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      padding-left: 0.25rem;
+      padding-right: 0.25rem;
+    }
+    
+    /* Make code text smaller on mobile */
+    #sections code.text-primary {
+      font-size: 0.65rem;
+      padding: 0.1rem 0.2rem;
+      display: inline-block;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    /* Make eye icon button smaller on mobile */
+    #sections .btn-sm i.bi-eye {
+      font-size: 0.9rem;
+    }
+    
+    /* Ensure button doesn't take too much space */
+    #sections .btn-sm {
+      padding: 0.25rem 0.4rem;
+      min-width: auto;
+    }
   }
   
   /* Students table scroll - limit to 4 rows visible */
   .teacher-dashboard-container #sectionStudentsTable {
     margin-bottom: 0;
+    width: 100% !important;
+    table-layout: fixed !important;
+    max-width: 100% !important;
   }
   
-  .teacher-dashboard-container .table-responsive[style*="max-height"] {
-    max-height: 200px !important; /* Approximately 4 rows */
+  /* Ensure students table container doesn't overflow and can scroll */
+  .teacher-dashboard-container #sectionContent .table-responsive {
+    overflow-x: auto !important;
     overflow-y: auto !important;
+    position: relative !important;
+    -webkit-overflow-scrolling: touch !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    min-height: 150px !important;
+    max-height: 250px !important; /* Constrain height to enable scrolling */
+    flex: 1 1 auto !important;
+    display: block !important;
+    visibility: visible !important;
+  }
+  
+  /* Prevent table from breaking out of container */
+  .teacher-dashboard-container #sectionContent .table-responsive table {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-bottom: 0;
+    table-layout: fixed !important;
+  }
+  
+  /* Ensure table cells don't overflow */
+  .teacher-dashboard-container #sectionContent .table-responsive table td {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    vertical-align: middle;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  /* Student name column should wrap long text */
+  .teacher-dashboard-container #sectionContent .table-responsive table td:first-child {
+    width: calc(100% - 120px);
+    word-break: break-word;
+    overflow-wrap: break-word;
+    padding-right: 0.5rem;
+  }
+  
+  /* Actions column should stay fixed width and not wrap */
+  .teacher-dashboard-container #sectionContent .table-responsive table td:last-child {
+    width: 120px !important;
+    min-width: 120px !important;
+    max-width: 120px !important;
+    white-space: nowrap;
+    text-align: right;
+    padding-left: 0.25rem;
+    padding-right: 0.25rem;
+  }
+  
+  /* Ensure buttons in actions column don't overflow */
+  .teacher-dashboard-container #sectionContent .table-responsive table td:last-child .btn {
+    margin: 0 1px;
+    padding: 0.2rem 0.4rem;
+    font-size: 0.7rem;
+    white-space: nowrap;
+  }
+  
+  /* Ensure flex container in actions column doesn't overflow */
+  .teacher-dashboard-container #sectionContent .table-responsive table td:last-child .d-flex {
+    justify-content: flex-end;
+    flex-wrap: nowrap;
+  }
+  
+  /* Allow table containers to size naturally */
+  .teacher-dashboard-container .row.mb-4 .table-responsive.flex-grow-1 {
+    flex: 1 1 auto;
+    min-height: 150px;
+  }
+  
+  /* Make cards look symmetrical - allow natural sizing */
+  .teacher-dashboard-container .row.mb-4 #sectionContent,
+  .teacher-dashboard-container .row.mb-4 #sectionContentEmpty {
+    width: 100% !important;
+    max-width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    min-height: 300px;
+  }
+  
+  /* Allow students table container to size naturally with scrolling */
+  .teacher-dashboard-container #sectionContent .table-responsive.flex-grow-1 {
+    overflow-y: auto !important;
+    overflow-x: auto !important;
+    min-height: 150px !important;
+    max-height: 250px !important; /* Constrain height to enable scrolling */
+    flex: 1 1 auto !important;
+    display: block !important;
+    -webkit-overflow-scrolling: touch !important;
+    height: auto !important;
   }
   
   /* Ensure empty state and progress section don't overlap */
@@ -878,6 +1267,14 @@ body {
     .table-responsive {
       margin: 0 -0.5rem;
       padding: 0 0.5rem;
+    }
+    
+    /* Prevent sectionContent table from overflowing on mobile */
+    .teacher-dashboard-container #sectionContent .table-responsive {
+      margin: 0 !important;
+      padding: 0 !important;
+      width: 100% !important;
+      max-width: 100% !important;
     }
     #sectionsList th:nth-child(2),
     #sectionsList td:nth-child(2) {
